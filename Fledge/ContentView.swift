@@ -22,7 +22,7 @@ struct ContentView: View {
                     .environmentObject(arrivalManager)
                     .environmentObject(userProfile)
             } else {
-                DashboardView()
+                MainTabView()
                     .environmentObject(arrivalManager)
                     .environmentObject(userProfile)
             }
