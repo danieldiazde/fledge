@@ -8,14 +8,16 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var arrivalManager = ArrivalManager()
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        if arrivalManager.hasSetArrivalDate {
+            DashboardView()
+                .environmentObject(arrivalManager)
+        } else {
+            OnboardingView()
+                .environmentObject(arrivalManager)
         }
-        .padding()
     }
 }
 
