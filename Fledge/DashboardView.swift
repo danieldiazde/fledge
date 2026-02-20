@@ -7,17 +7,20 @@
 
 import SwiftUI
 
-
 struct DashboardView: View {
     @EnvironmentObject var arrivalManager: ArrivalManager
+    @EnvironmentObject var userProfile: UserProfile
     
     var body: some View {
         VStack {
-            Text("Dashboard - Week \(arrivalManager.currentWeek)")
+            Text("Dashboard")
                 .font(.system(.title, design: .rounded))
             
+            // TEMP
             Button("Reset (Testing Only)") {
-                arrivalManager.reset()
+                UserDefaults.standard.removeObject(forKey: "arrivalDate")
+                arrivalManager.arrivalDate = Date()
+                userProfile.reset()
             }
             .foregroundColor(.red)
         }

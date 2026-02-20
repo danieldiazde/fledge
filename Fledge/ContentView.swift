@@ -9,14 +9,23 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var arrivalManager = ArrivalManager()
+    @StateObject private var userProfile = UserProfile()
     
     var body: some View {
-        if arrivalManager.hasSetArrivalDate {
-            DashboardView()
-                .environmentObject(arrivalManager)
-        } else {
-            OnboardingView()
-                .environmentObject(arrivalManager)
+        Group {
+            if !arrivalManager.hasSetArrivalDate {
+                OnboardingView()
+                    .environmentObject(arrivalManager)
+                    .environmentObject(userProfile)
+            } else if !userProfile.isComplete {
+                ProfileSetupView()
+                    .environmentObject(arrivalManager)
+                    .environmentObject(userProfile)
+            } else {
+                DashboardView()
+                    .environmentObject(arrivalManager)
+                    .environmentObject(userProfile)
+            }
         }
     }
 }
