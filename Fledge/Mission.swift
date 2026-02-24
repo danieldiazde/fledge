@@ -3,306 +3,236 @@
 //  Fledge
 //
 //  Created by Daniel Diaz de Leon on 20/02/26.
-//
+
 import Foundation
-import SwiftUI
 import SwiftData
 
-// MARK: - Mood Enum & UI Extensions
 
-enum Mood: String, Codable, CaseIterable, Sendable {
-    case ready = "Ready"
-    case overwhelmed = "Overwhelmed"
-    case lonely = "Lonely"
-    
-    // UI Properties centralized here so all views can use them!
-    var icon: String {
-        switch self {
-        case .overwhelmed: return "cloud.drizzle"
-        case .lonely: return "moon.stars"
-        case .ready: return "wind"
-        }
-    }
-    
-    var subtitle: String {
-        switch self {
-        case .overwhelmed: return "A lot is happening right now."
-        case .lonely: return "Missing people or feeling distant."
-        case .ready: return "Energized and up for it."
-        }
-    }
-    
-    var color: Color {
-        switch self {
-        case .overwhelmed: return Color(red: 0.45, green: 0.55, blue: 0.85)
-        case .lonely: return Color(red: 0.75, green: 0.55, blue: 0.35)
-        case .ready: return Color.accentColor
-        }
-    }
-    
-    var lightModeColor: Color {
-        switch self {
-        case .overwhelmed: return Color(red: 0.22, green: 0.32, blue: 0.65)
-        case .lonely: return Color(red: 0.58, green: 0.32, blue: 0.15)
-        case .ready: return Color(red: 0.72, green: 0.32, blue: 0.20)
-        }
-    }
-    
-    var atmosphereColors: [Color] {
-        switch self {
-        case .overwhelmed: return [
-            Color(red: 0.06, green: 0.08, blue: 0.22),
-            Color(red: 0.08, green: 0.06, blue: 0.18)
-        ]
-        case .lonely: return [
-            Color(red: 0.16, green: 0.08, blue: 0.06),
-            Color(red: 0.12, green: 0.06, blue: 0.08)
-        ]
-        case .ready: return [
-            Color(red: 0.12, green: 0.06, blue: 0.06),
-            Color(red: 0.18, green: 0.08, blue: 0.04)
-        ]
-        }
-    }
-}
 
-// MARK: - Pillar
+@Model
+final class MoodStepRecord {
 
-enum Pillar: String, Codable, CaseIterable, Sendable {
-    case city = "The City"
-    case adultMode = "Adult Mode"
-    case growth = "Your Growth"
-    
-    var icon: String {
-        switch self {
-        case .city:       return "map"
-        case .adultMode:  return "wrench.and.screwdriver"
-        case .growth:     return "leaf"
-        }
-    }
-}
-
-// MARK: - Resource & Steps
-
-enum ResourceType: String, Codable, Sendable {
-    case app, place, tip, warning, cost
-    
-    var icon: String {
-        switch self {
-        case .app:     return "📱"
-        case .place:   return "📍"
-        case .tip:     return "💡"
-        case .warning: return "⚠️"
-        case .cost:    return "💰"
-        }
-    }
-}
-
-struct MissionResource: Codable, Identifiable, Sendable {
     var id: UUID = UUID()
-    var type: ResourceType
-    var name: String
-    var detail: String
-    var url: String?
-    var icon: String { type.icon }
-}
-
-struct MissionStep: Codable, Identifiable, Sendable {
-    var id: UUID = UUID()
+    var moodRaw: String
+    var sortOrder: Int
     var number: Int
     var action: String
     var howTo: String
     var tip: String?
-}
 
-// MARK: - Mood Variants
+    init(mood: Mood, sortOrder: Int, step: MissionStep) {
+        self.id        = step.id
+        self.moodRaw   = mood.rawValue
+        self.sortOrder = sortOrder
+        self.number    = step.number
+        self.action    = step.action
+        self.howTo     = step.howTo
+        self.tip       = step.tip
+    }
 
-struct MoodVariant: Codable, Sendable {
-    var ready: String
-    var overwhelmed: String
-    var lonely: String
-    
-    func text(for mood: Mood) -> String {
-        switch mood {
-        case .ready:       return ready
-        case .overwhelmed: return overwhelmed
-        case .lonely:      return lonely
-        }
+    func toStep() -> MissionStep {
+        MissionStep(id: id, number: number, action: action, howTo: howTo, tip: tip)
     }
 }
 
-struct MoodSteps: Codable, Sendable {
-    var ready: [MissionStep]
-    var overwhelmed: [MissionStep]
-    var lonely: [MissionStep]
-    
-    func steps(for mood: Mood) -> [MissionStep] {
-        switch mood {
-        case .ready:       return ready
-        case .overwhelmed: return overwhelmed
-        case .lonely:      return lonely
-        }
-    }
-}
-
-struct MoodResources: Codable, Sendable {
-    var ready: [MissionResource]
-    var overwhelmed: [MissionResource]
-    var lonely: [MissionResource]
-    
-    func resources(for mood: Mood) -> [MissionResource] {
-        switch mood {
-        case .ready:       return ready
-        case .overwhelmed: return overwhelmed
-        case .lonely:      return lonely
-        }
-    }
-}
-
-// MARK: - Progress
-
-struct MissionProgress: Codable, Sendable {
-    var startingMood: Mood
-    var activeMood: Mood
-    var checkedStepIds: [UUID] = []
-    
-    func isChecked(_ id: UUID) -> Bool {
-        checkedStepIds.contains(id)
-    }
-    
-    mutating func toggle(_ id: UUID) {
-        if let index = checkedStepIds.firstIndex(of: id) {
-            checkedStepIds.remove(at: index)
-        } else {
-            checkedStepIds.append(id)
-        }
-    }
-    
-    func completedCount(for steps: [MissionStep]) -> Int {
-        steps.filter { isChecked($0.id) }.count
-    }
-    
-    func isAllComplete(for steps: [MissionStep]) -> Bool {
-        !steps.isEmpty && completedCount(for: steps) == steps.count
-    }
-}
-
-// MARK: - The Mission Model
+// MARK: - MoodResourceRecord
 
 @Model
-class Mission {
+final class MoodResourceRecord {
     var id: UUID = UUID()
+    var moodRaw: String
+    var sortOrder: Int
+    var typeRaw: String
+    var name: String
+    var detail: String
+    var url: String?
+
+    init(mood: Mood, sortOrder: Int, resource: MissionResource) {
+        self.id        = resource.id
+        self.moodRaw   = mood.rawValue
+        self.sortOrder = sortOrder
+        self.typeRaw   = resource.type.rawValue
+        self.name      = resource.name
+        self.detail    = resource.detail
+        self.url       = resource.url
+    }
+
+    func toResource() -> MissionResource? {
+        guard let type = ResourceType(rawValue: typeRaw) else { return nil }
+        return MissionResource(id: id, type: type, name: name, detail: detail, url: url)
+    }
+}
+
+// MARK: - Mission
+
+@Model
+final class Mission {
+
+    // MARK: Scalar properties
+
+    var id: UUID          = UUID()
     var title: String
     var pillar: Pillar
     var weekNumber: Int
-    var tags: [String]
+    var tags: [MissionTag]
     var duration: String
     var xpValue: Int
-    var isComplete: Bool = false
-    var prerequisiteMissionID: UUID? = nil
+    var isComplete: Bool  = false
     var objective: String
+    var prerequisiteMissionID: UUID? = nil
+
+    // MARK: MoodVariant storage — 9 flat strings, zero encoding
+    //
+    // briefing, truth, and win each need ready / overwhelmed / lonely variants.
+
+    var briefingReady:       String
+    var briefingOverwhelmed: String
+    var briefingLonely:      String
+
+    var truthReady:          String
+    var truthOverwhelmed:    String
+    var truthLonely:         String
+
+    var winReady:            String
+    var winOverwhelmed:      String
+    var winLonely:           String
+
+    // MARK: Progress storage — flat primitives, zero encoding
+    //
+    // SwiftData stores [UUID] natively, so no serialization needed.
+
+    var progressStartingMoodRaw: String? = nil
+    var progressActiveMoodRaw:   String? = nil
+    var progressCheckedStepIDs:  [UUID]  = []
+
+    // MARK: Relationships
+
+    @Relationship(deleteRule: .cascade)
+    var stepRecords: [MoodStepRecord] = []
+
+    @Relationship(deleteRule: .cascade)
+    var resourceRecords: [MoodResourceRecord] = []
+
+    // MARK: - Computed accessors (no encoding — pure struct construction)
+
+    var briefing: MoodVariant {
+        get { MoodVariant(ready: briefingReady, overwhelmed: briefingOverwhelmed, lonely: briefingLonely) }
+        set { briefingReady = newValue.ready; briefingOverwhelmed = newValue.overwhelmed; briefingLonely = newValue.lonely }
+    }
+
+    var truth: MoodVariant {
+        get { MoodVariant(ready: truthReady, overwhelmed: truthOverwhelmed, lonely: truthLonely) }
+        set { truthReady = newValue.ready; truthOverwhelmed = newValue.overwhelmed; truthLonely = newValue.lonely }
+    }
+
+    var win: MoodVariant {
+        get { MoodVariant(ready: winReady, overwhelmed: winOverwhelmed, lonely: winLonely) }
+        set { winReady = newValue.ready; winOverwhelmed = newValue.overwhelmed; winLonely = newValue.lonely }
+    }
+
+    var progress: MissionProgress? {
+        get {
+            guard
+                let startRaw  = progressStartingMoodRaw, let start  = Mood(rawValue: startRaw),
+                let activeRaw = progressActiveMoodRaw,   let active = Mood(rawValue: activeRaw)
+            else { return nil }
+            return MissionProgress(startingMood: start, activeMood: active, checkedStepIds: progressCheckedStepIDs)
+        }
+        set {
+            progressStartingMoodRaw = newValue?.startingMood.rawValue
+            progressActiveMoodRaw   = newValue?.activeMood.rawValue
+            progressCheckedStepIDs  = newValue?.checkedStepIds ?? []
+        }
+    }
+
+    // Calls MissionData which is @MainActor — must be @MainActor here too.
+    @MainActor
     var prerequisiteTitle: String {
         guard let prereqID = prerequisiteMissionID else { return "" }
         return MissionData.mission(withID: prereqID)?.title ?? ""
     }
-    
-    // 1. SWIFTDATA BUG WORKAROUND: Store as raw Data
-    var briefingData: Data
-    var truthData: Data
-    var winData: Data
-    var moodStepsData: Data
-    var moodResourcesData: Data
-    var progressData: Data?
-    
-    // 2. TRANSIENT PROPERTIES: Your views use these cleanly!
-    // @Transient tells SwiftData to ignore these properties and just let us handle them.
-    @Transient var briefing: MoodVariant {
-        get { decode(briefingData) ?? MoodVariant(ready: "", overwhelmed: "", lonely: "") }
-        set { briefingData = encode(newValue) }
-    }
-    
-    @Transient var truth: MoodVariant {
-        get { decode(truthData) ?? MoodVariant(ready: "", overwhelmed: "", lonely: "") }
-        set { truthData = encode(newValue) }
-    }
-    
-    @Transient var win: MoodVariant {
-        get { decode(winData) ?? MoodVariant(ready: "", overwhelmed: "", lonely: "") }
-        set { winData = encode(newValue) }
-    }
-    
-    @Transient var moodSteps: MoodSteps {
-        get { decode(moodStepsData) ?? MoodSteps(ready: [], overwhelmed: [], lonely: []) }
-        set { moodStepsData = encode(newValue) }
-    }
-    
-    @Transient var moodResources: MoodResources {
-        get { decode(moodResourcesData) ?? MoodResources(ready: [], overwhelmed: [], lonely: []) }
-        set { moodResourcesData = encode(newValue) }
-    }
-    
-    @Transient var progress: MissionProgress? {
-        get { decode(progressData) }
-        set { progressData = encode(newValue) }
-    }
-    
-    // MARK: Helpers
-    
+
+    // MARK: - Helpers
+
     func activeSteps(for mood: Mood) -> [MissionStep] {
-        moodSteps.steps(for: mood)
+        stepRecords
+            .filter { $0.moodRaw == mood.rawValue }
+            .sorted { $0.sortOrder < $1.sortOrder }
+            .map    { $0.toStep() }
     }
-    
+
     func activeResources(for mood: Mood) -> [MissionResource] {
-        moodResources.resources(for: mood)
+        resourceRecords
+            .filter  { $0.moodRaw == mood.rawValue }
+            .sorted  { $0.sortOrder < $1.sortOrder }
+            .compactMap { $0.toResource() }
     }
     
+    @MainActor
     func completedCount(for mood: Mood) -> Int {
         progress?.completedCount(for: activeSteps(for: mood)) ?? 0
     }
     
+    @MainActor
     func allStepsComplete(for mood: Mood) -> Bool {
         progress?.isAllComplete(for: activeSteps(for: mood)) ?? false
     }
-    
-    // MARK: Main Init
-    
+
+
     init(
         title: String,
         briefing: MoodVariant,
         truth: MoodVariant,
+        win: MoodVariant,
         objective: String,
         moodSteps: MoodSteps,
         moodResources: MoodResources,
-        win: MoodVariant,
         pillar: Pillar,
         weekNumber: Int,
-        tags: [String],
+        tags: [MissionTag],
         duration: String,
         xpValue: Int,
         progress: MissionProgress? = nil
     ) {
-        self.isComplete = false
-        self.progressData = progress != nil
-            ? (try? JSONEncoder().encode(progress)) : nil
-        
-        self.title = title
-        self.objective = objective
-        self.pillar = pillar
+        self.title      = title
+        self.objective  = objective
+        self.pillar     = pillar
         self.weekNumber = weekNumber
-        self.tags = tags
-        self.duration = duration
-        self.xpValue = xpValue
+        self.tags       = tags
+        self.duration   = duration
+        self.xpValue    = xpValue
+        self.isComplete = false
+
+        self.briefingReady       = briefing.ready
+        self.briefingOverwhelmed = briefing.overwhelmed
+        self.briefingLonely      = briefing.lonely
+
+        self.truthReady          = truth.ready
+        self.truthOverwhelmed    = truth.overwhelmed
+        self.truthLonely         = truth.lonely
+
+        self.winReady            = win.ready
+        self.winOverwhelmed      = win.overwhelmed
+        self.winLonely           = win.lonely
+
+        self.progressStartingMoodRaw = progress?.startingMood.rawValue
+        self.progressActiveMoodRaw   = progress?.activeMood.rawValue
+        self.progressCheckedStepIDs  = progress?.checkedStepIds ?? []
         
-        // Encode directly to bypass the SwiftData crash
-        self.briefingData = (try? JSONEncoder().encode(briefing)) ?? Data()
-        self.truthData = (try? JSONEncoder().encode(truth)) ?? Data()
-        self.winData = (try? JSONEncoder().encode(win)) ?? Data()
-        self.moodStepsData = (try? JSONEncoder().encode(moodSteps)) ?? Data()
-        self.moodResourcesData = (try? JSONEncoder().encode(moodResources)) ?? Data()
+        var steps: [MoodStepRecord] = []
+        for (i, step) in moodSteps.ready.enumerated()       { steps.append(MoodStepRecord(mood: .ready,       sortOrder: i, step: step)) }
+        for (i, step) in moodSteps.overwhelmed.enumerated() { steps.append(MoodStepRecord(mood: .overwhelmed, sortOrder: i, step: step)) }
+        for (i, step) in moodSteps.lonely.enumerated()      { steps.append(MoodStepRecord(mood: .lonely,      sortOrder: i, step: step)) }
+        self.stepRecords = steps
+
+        var resources: [MoodResourceRecord] = []
+        for (i, r) in moodResources.ready.enumerated()       { resources.append(MoodResourceRecord(mood: .ready,       sortOrder: i, resource: r)) }
+        for (i, r) in moodResources.overwhelmed.enumerated() { resources.append(MoodResourceRecord(mood: .overwhelmed, sortOrder: i, resource: r)) }
+        for (i, r) in moodResources.lonely.enumerated()      { resources.append(MoodResourceRecord(mood: .lonely,      sortOrder: i, resource: r)) }
+        self.resourceRecords = resources
     }
-    
-    // MARK: Convenience Init (For MissionData.swift)
-    
+
+
     convenience init(
         title: String,
         briefing: MoodVariant,
@@ -313,7 +243,7 @@ class Mission {
         win: MoodVariant,
         pillar: Pillar,
         weekNumber: Int,
-        tags: [String],
+        tags: [MissionTag],
         duration: String,
         xpValue: Int
     ) {
@@ -321,26 +251,15 @@ class Mission {
             title: title,
             briefing: briefing,
             truth: truth,
+            win: win,
             objective: objective,
             moodSteps: MoodSteps(ready: steps, overwhelmed: steps, lonely: steps),
             moodResources: MoodResources(ready: resources, overwhelmed: resources, lonely: resources),
-            win: win,
             pillar: pillar,
             weekNumber: weekNumber,
             tags: tags,
             duration: duration,
             xpValue: xpValue
         )
-    }
-    
-    
-    private func encode<T: Encodable>(_ value: T?) -> Data {
-        guard let value = value else { return Data() }
-        return (try? JSONEncoder().encode(value)) ?? Data()
-    }
-    
-    private func decode<T: Decodable>(_ data: Data?) -> T? {
-        guard let data = data, !data.isEmpty else { return nil }
-        return try? JSONDecoder().decode(T.self, from: data)
     }
 }
