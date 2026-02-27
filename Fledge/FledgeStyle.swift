@@ -62,6 +62,13 @@ extension Pillar {
         case .growth: return Color(red: 0.18, green: 0.52, blue: 0.35)
         }
     }
+    var tagline: String {
+        switch self {
+        case .city:      return "Explore your new home"
+        case .adultMode: return "Handle the essentials"
+        case .growth:    return "Invest in yourself"
+        }
+    }
 }
 
 // MARK: - Glass Card Modifier
