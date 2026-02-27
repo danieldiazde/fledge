@@ -48,20 +48,33 @@ struct HeroGlassCard: ViewModifier {
 
 // MARK: - Pillar Colors
 extension Pillar {
+    /// Adaptive tint used throughout the main UI in light and dark mode.
     var color: Color {
         switch self {
-        case .city: return Color(red: 0.4, green: 0.55, blue: 0.9)
+        case .city:      return Color(red: 0.4, green: 0.55, blue: 0.9)
         case .adultMode: return Color.accentColor
-        case .growth: return Color(red: 0.3, green: 0.78, blue: 0.5)
+        case .growth:    return Color(red: 0.3, green: 0.78, blue: 0.5)
         }
     }
+
     var lightModeColor: Color {
         switch self {
-        case .city: return Color(red: 0.25, green: 0.35, blue: 0.65)
+        case .city:      return Color(red: 0.25, green: 0.35, blue: 0.65)
         case .adultMode: return Color(red: 0.72, green: 0.32, blue: 0.20)
-        case .growth: return Color(red: 0.18, green: 0.52, blue: 0.35)
+        case .growth:    return Color(red: 0.18, green: 0.52, blue: 0.35)
         }
     }
+
+    /// Brighter variant used exclusively on the dark sky canvas, where
+    /// standard pillar colors would appear too muted against near-black.
+    var skyColor: Color {
+        switch self {
+        case .city:      return Color(red: 0.5, green: 0.65, blue: 1.0)
+        case .adultMode: return Color(red: 1.0, green: 0.65, blue: 0.45)
+        case .growth:    return Color(red: 0.5, green: 0.9,  blue: 0.65)
+        }
+    }
+
     var tagline: String {
         switch self {
         case .city:      return "Explore your new home"

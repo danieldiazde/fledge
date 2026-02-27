@@ -333,4 +333,11 @@ struct MissionData {
     static func mission(withID id: UUID) -> Mission? {
         all.first { $0.id == id }
     }
+
+    /// Returns `true` when `mission`'s prerequisite has not yet been completed,
+    /// meaning the mission should be rendered locked and non-navigable.
+    static func isLocked(_ mission: Mission) -> Bool {
+        guard let prereqID = mission.prerequisiteMissionID else { return false }
+        return !(MissionData.mission(withID: prereqID)?.isComplete ?? false)
+    }
 }

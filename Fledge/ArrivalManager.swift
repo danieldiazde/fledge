@@ -24,6 +24,17 @@ class ArrivalManager: ObservableObject {
         return min(week, 4)
     }
 
+    /// A short phrase contextualising the current week, shown as the dashboard headline.
+    var weekLabel: String {
+        switch currentWeek {
+        case 1: return "Your first week."
+        case 2: return "Finding your rhythm."
+        case 3: return "Getting comfortable."
+        case 4: return "One month in."
+        default: return "Keep going."
+        }
+    }
+
     init() {
         if let saved = UserDefaults.standard.object(forKey: "arrivalDate") as? Date {
             self.arrivalDate = saved
