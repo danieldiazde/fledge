@@ -9,12 +9,49 @@ import Foundation
 
 @MainActor
 struct MissionData {
+    
+    private static func makePlaceholder(title: String, pillar: Pillar, week: Int) -> Mission {
+            return Mission(
+                title: title,
+                briefing: MoodVariant(
+                    ready: "You're ready for this. Let's conquer \(title.lowercased()).",
+                    overwhelmed: "Take a deep breath. Just focus on one step today.",
+                    lonely: "Getting out and doing this will help you feel connected to {city}."
+                ),
+                truth: MoodVariant(
+                    ready: "Action creates momentum.",
+                    overwhelmed: "Small steps are still steps. They all count.",
+                    lonely: "Connection starts with engaging the world around you."
+                ),
+                objective: "Complete the steps for: \(title)",
+                steps: [
+                    MissionStep(
+                        number: 1,
+                        action: "Start here",
+                        howTo: "Placeholder instructions for this mission.",
+                        tip: "Take your time."
+                    )
+                ],
+                resources: [],
+                win: MoodVariant(
+                    ready: "Great job, you crushed it.",
+                    overwhelmed: "You did it, despite the noise. Be proud.",
+                    lonely: "You stepped out and succeeded. You're building a life here."
+                ),
+                pillar: pillar,
+                weekNumber: week,
+                tags: [],
+                duration: "1 day",
+                xpValue: 20
+            )
+        }
 
     static let all: [Mission] = {
+        
+        //MARK: WEEK 1
 
-        // MARK: - WEEK 1 · THE CITY
-
-        let mission1 = Mission(
+        //City
+        let m1 = Mission(
             title: "Learn one route really well",
             briefing: MoodVariant(
                 ready: "{city} is a maze and you don't have a map yet. Change that today. One route, owned completely.",
@@ -97,7 +134,7 @@ struct MissionData {
             xpValue: 25
         )
 
-        let mission2 = Mission(
+        let m2 = Mission(
             title: "Find your local spots",
             briefing: MoodVariant(
                 ready: "Every city has a version of itself that belongs to locals. Time to find yours in {city} — the taquería, the café, the park bench that becomes yours.",
@@ -167,9 +204,116 @@ struct MissionData {
             duration: "1 day",
             xpValue: 20
         )
-        mission2.prerequisiteMissionID = mission1.id
-
-        return [mission1, mission2]
+        
+        let m3 = makePlaceholder(title: "Decode the transit system", pillar: .city, week: 1)
+        
+        m2.prerequisiteMissionID = m1.id
+        m3.prerequisiteMissionID = m2.id
+        
+        // Growth
+        let m4 = makePlaceholder(title: "Claim your sanctuary", pillar: .growth, week: 1)
+        let m5 = makePlaceholder(title: "A quiet reflection", pillar: .growth, week: 1)
+        let m6 = makePlaceholder(title: "Summon a piece of home", pillar: .growth, week: 1)
+        m5.prerequisiteMissionID = m4.id
+        m6.prerequisiteMissionID = m5.id
+                
+        // Adult Mode
+        let m7 = makePlaceholder(title: "The survival grocery run", pillar: .adultMode, week: 1)
+        let m8 = makePlaceholder(title: "Master the laundry system", pillar: .adultMode, week: 1)
+        let m9 = makePlaceholder(title: "Map your daily cost", pillar: .adultMode, week: 1)
+        m8.prerequisiteMissionID = m7.id
+        m9.prerequisiteMissionID = m8.id
+        
+        
+        // ─────────────────────────────────────────────────────────────────
+        // MARK: - WEEK 2
+        // ─────────────────────────────────────────────────────────────────
+                
+        // City
+        let m10 = makePlaceholder(title: "The Third Place", pillar: .city, week: 2)
+        let m11 = makePlaceholder(title: "Night Moves", pillar: .city, week: 2)
+        let m12 = makePlaceholder(title: "The Cultural Icon", pillar: .city, week: 2)
+        m11.prerequisiteMissionID = m10.id
+        m12.prerequisiteMissionID = m11.id
+                
+        // Growth
+                let m13 = makePlaceholder(title: "Digital Detox", pillar: .growth, week: 2)
+                let m14 = makePlaceholder(title: "Say Yes", pillar: .growth, week: 2)
+                let m15 = makePlaceholder(title: "The Hobby Anchor", pillar: .growth, week: 2)
+                m14.prerequisiteMissionID = m13.id
+                m15.prerequisiteMissionID = m14.id
+                
+                // Adult Mode
+                let m16 = makePlaceholder(title: "Master the endless carb", pillar: .adultMode, week: 2)
+                let m17 = makePlaceholder(title: "The Deep Clean", pillar: .adultMode, week: 2)
+                let m18 = makePlaceholder(title: "The Healthcare Map", pillar: .adultMode, week: 2)
+                m17.prerequisiteMissionID = m16.id
+                m18.prerequisiteMissionID = m17.id
+                
+                
+                // ─────────────────────────────────────────────────────────────────
+                // MARK: - WEEK 3
+                // ─────────────────────────────────────────────────────────────────
+                
+                // City
+                let m19 = makePlaceholder(title: "Lost on Purpose", pillar: .city, week: 3)
+                let m20 = makePlaceholder(title: "The Local Market", pillar: .city, week: 3)
+                let m21 = makePlaceholder(title: "The Commuter Shift", pillar: .city, week: 3)
+                m20.prerequisiteMissionID = m19.id
+                m21.prerequisiteMissionID = m20.id
+                
+                // Growth
+                let m22 = makePlaceholder(title: "Strike a Conversation", pillar: .growth, week: 3)
+                let m23 = makePlaceholder(title: "The Comfort Zone", pillar: .growth, week: 3)
+                let m24 = makePlaceholder(title: "The Future Letter", pillar: .growth, week: 3)
+                m23.prerequisiteMissionID = m22.id
+                m24.prerequisiteMissionID = m23.id
+                
+                // Adult Mode
+                let m25 = makePlaceholder(title: "The forgiving protein", pillar: .adultMode, week: 3)
+                let m26 = makePlaceholder(title: "The Bill Audit", pillar: .adultMode, week: 3)
+                let m27 = makePlaceholder(title: "Emergency Fund", pillar: .adultMode, week: 3)
+                m26.prerequisiteMissionID = m25.id
+                m27.prerequisiteMissionID = m26.id
+                
+                
+                // ─────────────────────────────────────────────────────────────────
+                // MARK: - WEEK 4
+                // ─────────────────────────────────────────────────────────────────
+                
+                // City
+                let m28 = makePlaceholder(title: "Host a Tour", pillar: .city, week: 4)
+                let m29 = makePlaceholder(title: "The Hidden Gem", pillar: .city, week: 4)
+                let m30 = makePlaceholder(title: "Public Event", pillar: .city, week: 4)
+                m29.prerequisiteMissionID = m28.id
+                m30.prerequisiteMissionID = m29.id
+                
+                // Growth
+                let m31 = makePlaceholder(title: "Reflect on Week 1", pillar: .growth, week: 4)
+                let m32 = makePlaceholder(title: "The Regular Status", pillar: .growth, week: 4)
+                let m33 = makePlaceholder(title: "Own the Move", pillar: .growth, week: 4)
+                m32.prerequisiteMissionID = m31.id
+                m33.prerequisiteMissionID = m32.id
+                
+                // Adult Mode
+                let m34 = makePlaceholder(title: "Conquer the chicken breast", pillar: .adultMode, week: 4)
+                let m35 = makePlaceholder(title: "The Big Budget", pillar: .adultMode, week: 4)
+                let m36 = makePlaceholder(title: "The Fledge Final", pillar: .adultMode, week: 4)
+                m35.prerequisiteMissionID = m34.id
+                m36.prerequisiteMissionID = m35.id
+        
+        
+        
+        let allMissions = [
+                    m1, m2, m3, m4, m5, m6, m7, m8, m9,
+                    m10, m11, m12, m13, m14, m15, m16, m17, m18,
+                    m19, m20, m21, m22, m23, m24, m25, m26, m27,
+                    m28, m29, m30, m31, m32, m33, m34, m35, m36
+                ]
+        
+        allMissions.forEach { MissionStore.restore($0) }
+        
+        return allMissions
     }()
 
     static func missions(forWeek week: Int, tags: [MissionTag] = []) -> [Mission] {

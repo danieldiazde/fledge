@@ -7,61 +7,6 @@
 
 import SwiftUI
 
-enum Mood: String, CaseIterable {
-    case overwhelmed = "Overwhelmed"
-    case lonely = "Lonely"
-    case ready = "Ready"
-    
-    var icon: String {
-        switch self {
-        case .overwhelmed: return "cloud.drizzle"
-        case .lonely: return "moon.stars"
-        case .ready: return "wind"
-        }
-    }
-    
-    var subtitle: String {
-        switch self {
-        case .overwhelmed: return "A lot is happening right now."
-        case .lonely: return "Missing people or feeling distant."
-        case .ready: return "Energized and up for it."
-        }
-    }
-    
-    var color: Color {
-        switch self {
-        case .overwhelmed: return Color(red: 0.45, green: 0.55, blue: 0.85)
-        case .lonely: return Color(red: 0.75, green: 0.55, blue: 0.35)
-        case .ready: return Color.accentColor
-        }
-    }
-    
-    var lightModeColor: Color {
-        switch self {
-        case .overwhelmed: return Color(red: 0.22, green: 0.32, blue: 0.65)
-        case .lonely: return Color(red: 0.58, green: 0.32, blue: 0.15)
-        case .ready: return Color(red: 0.72, green: 0.32, blue: 0.20)
-        }
-    }
-    
-    var atmosphereColors: [Color] {
-        switch self {
-        case .overwhelmed: return [
-            Color(red: 0.06, green: 0.08, blue: 0.22),
-            Color(red: 0.08, green: 0.06, blue: 0.18)
-        ]
-        case .lonely: return [
-            Color(red: 0.16, green: 0.08, blue: 0.06),
-            Color(red: 0.12, green: 0.06, blue: 0.08)
-        ]
-        case .ready: return [
-            Color(red: 0.12, green: 0.06, blue: 0.06),
-            Color(red: 0.18, green: 0.08, blue: 0.04)
-        ]
-        }
-    }
-}
-
 struct MoodCheckInView: View {
     @Environment(\.colorScheme) var colorScheme
     let onComplete: (Mood) -> Void
@@ -70,18 +15,22 @@ struct MoodCheckInView: View {
     @State private var appeared = false
     @State private var confirming = false
     
+    private var backgroundColors: [Color] {
+            if let mood = selectedMood, colorScheme == .dark {
+                return mood.atmosphereColors
+            }
+            return [Color("AtmosphereTop"), Color("AtmosphereBottom")]
+        }
+    
     var body: some View {
         ZStack {
-            // Background shifts with selection
             LinearGradient(
-                colors: selectedMood != nil
-                    ? (colorScheme == .dark
-                        ? selectedMood!.atmosphereColors
-                        : [Color("AtmosphereTop"), Color("AtmosphereBottom")])
-                    : [Color("AtmosphereTop"), Color("AtmosphereBottom")],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+                            colors: backgroundColors,
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .ignoresSafeArea()
+                        .animation(.easeInOut(duration: 0.5), value: selectedMood?.rawValue)
             .ignoresSafeArea()
             .animation(.easeInOut(duration: 0.5), value: selectedMood?.rawValue)
             
@@ -102,14 +51,14 @@ struct MoodCheckInView: View {
                 // Header
                 VStack(spacing: 10) {
                     Text("How are you feeling")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .font(.system(.largeTitle, design: .rounded)).fontWeight(.bold)
                         .foregroundColor(.primary)
                     Text("about today?")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .font(.system(.largeTitle, design: .rounded)).fontWeight(.bold)
                         .foregroundColor(.primary)
                     
                     Text("Fledge will adjust to match.")
-                        .font(.system(size: 15, design: .rounded))
+                        .font(.system(.headline, design: .rounded))
                         .foregroundColor(.secondary)
                         .padding(.top, 4)
                 }
@@ -150,7 +99,8 @@ struct MoodCheckInView: View {
                     }
                 } label: {
                     Text(selectedMood == nil ? "Pick how you're feeling" : "Let's go →")
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .font(.system(.title3, design: .rounded)) // FIXED: Removed weight from here
+                        .fontWeight(.bold)                         // FIXED: Added weight modifier
                         .foregroundColor(selectedMood == nil ? .secondary : .white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 18)
@@ -195,6 +145,30 @@ struct MoodCard: View {
         colorScheme == .dark ? mood.color : mood.lightModeColor
     }
     
+    @ViewBuilder
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 20)
+                .fill(colorScheme == .dark
+                    ? AnyShapeStyle(.regularMaterial)
+                    : AnyShapeStyle(Color.white)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(effectiveColor.opacity(isSelected ? 0.07 : 0))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .strokeBorder(
+                            effectiveColor.opacity(isSelected ? 0.30 : 0.10),
+                            lineWidth: 1
+                        )
+                )
+                .shadow(
+                    color: effectiveColor.opacity(isSelected ? 0.15 : 0),
+                    radius: 12, x: 0, y: 4
+                )
+        }
+    
     var body: some View {
         Button(action: action) {
             HStack(spacing: 16) {
@@ -212,17 +186,18 @@ struct MoodCard: View {
                         )
                     
                     Image(systemName: mood.icon)
-                        .font(.system(size: 22))
+                        .font(.system(.title2))
                         .foregroundColor(effectiveColor)
                 }
                 
                 // Text
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(mood.rawValue)
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                    Text(mood.title)
+                        .font(.system(.title3, design: .rounded))
+                        .fontWeight(.bold)
                         .foregroundColor(.primary)
                     Text(mood.subtitle)
-                        .font(.system(size: 13, design: .rounded))
+                        .font(.system(.callout, design: .rounded))
                         .foregroundColor(.secondary)
                 }
                 
@@ -243,32 +218,12 @@ struct MoodCard: View {
                 }
             }
             .padding(16)
-            .background {
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(colorScheme == .dark
-                        ? AnyShapeStyle(.regularMaterial)
-                        : AnyShapeStyle(Color.white)
-                    )
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(effectiveColor.opacity(isSelected ? 0.07 : 0))
-                    }
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 20)
-                            .strokeBorder(
-                                effectiveColor.opacity(isSelected ? 0.30 : 0.10),
-                                lineWidth: 1
-                            )
-                    }
-                    .shadow(
-                        color: effectiveColor.opacity(isSelected ? 0.15 : 0),
-                        radius: 12, x: 0, y: 4
-                    )
-            }
+            .background(cardBackground)
             .scaleEffect(isSelected ? 1.02 : 1.0)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         }
         .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: isSelected)
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? 0 : 16)
         .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(delay), value: appeared)

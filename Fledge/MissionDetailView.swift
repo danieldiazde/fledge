@@ -13,6 +13,7 @@ struct MissionDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var moodManager: MoodManager
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var userProfile: UserProfile
     
     @State private var activeMood: Mood = .ready
     @State private var showMoodSwitch = false
@@ -71,18 +72,17 @@ struct MissionDetailView: View {
                     MissionHeroView(mission: mission, pillarColor: pillarColor)
                         .opacity(appeared ? 1 : 0)
                         .offset(y: appeared ? 0 : 16)
-                        .padding(.top, 16)
-                        .padding(.horizontal, 20)
                     
                     if isLocked {
                         HStack(spacing: 10) {
                             Image(systemName: "lock.fill")
-                                .font(.system(size: 13))
+                                .font(.system(.footnote))
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Mission locked")
-                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .font(.system(.footnote, design: .rounded))
+                                    .fontWeight(.bold)
                                 Text("Complete \"\(prerequisiteTitle)\" first")
-                                    .font(.system(size: 12, design: .rounded))
+                                    .font(.system(.caption, design: .rounded))
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
@@ -105,13 +105,14 @@ struct MissionDetailView: View {
                     MoodAdaptiveSection(
                         label: "BRIEFING",
                         icon: "bolt.fill",
-                        content: mission.briefing.text(for: activeMood),
+                        content: mission.briefing.text(for: activeMood)
+                            .personalized(name: userProfile.name, city: userProfile.city),
                         color: pillarColor,
                         style: .briefing,
                         appeared: appeared,
                         delay: 0.10
                     )
-                    .padding(.top, 24)
+                    .padding(.top, 32)
                     .padding(.horizontal, 20)
                     
                     // Objective
@@ -120,20 +121,28 @@ struct MissionDetailView: View {
                         pillarColor: pillarColor,
                         appeared: appeared
                     )
-                    .padding(.top, 16)
+                    .padding(.top, 24)
                     .padding(.horizontal, 20)
+                    
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.06))
+                        .frame(height: 1)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 32)
+                        .opacity(appeared ? 1 : 0)
                     
                     // Truth
                     MoodAdaptiveSection(
                         label: "THE TRUTH",
                         icon: "quote.opening",
-                        content: mission.truth.text(for: activeMood),
+                        content: mission.truth.text(for: activeMood)
+                            .personalized(name: userProfile.name, city: userProfile.city),
                         color: pillarColor,
                         style: .standard,
                         appeared: appeared,
                         delay: 0.20
                     )
-                    .padding(.top, 20)
+                    .padding(.top, 28)
                     .padding(.horizontal, 20)
                     
                     // Steps
@@ -151,9 +160,10 @@ struct MissionDetailView: View {
                                 updated.toggle(stepId)
                                 updated.activeMood = activeMood
                                 mission.progress = updated
+                                MissionStore.save(mission)
                             }
                         )
-                        .padding(.top, 24)
+                        .padding(.top, 36)
                         .padding(.horizontal, 20)
                         .transition(.opacity)
                         
@@ -172,7 +182,7 @@ struct MissionDetailView: View {
                                 showMove = true
                             }
                         }
-                        .padding(.top, 20)
+                        .padding(.top, 32)
                         .padding(.horizontal, 20)
                         .opacity(appeared ? 1 : 0)
                     }
@@ -196,7 +206,12 @@ struct MissionDetailView: View {
                         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                             justCompleted = true
                             showWinCard = true
+                            userProfile.totalXP += mission.xpValue
                         }
+                        #if os(iOS)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        }
+                        #endif
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
@@ -211,7 +226,8 @@ struct MissionDetailView: View {
             // Win card
             if showWinCard && !showMoment && justCompleted {
                 WinCardView(
-                    winText: mission.win.text(for: activeMood),
+                    winText: mission.win.text(for: activeMood)
+                        .personalized(name: userProfile.name, city: userProfile.city),
                     xpValue: mission.xpValue,
                     pillarColor: pillarColor
                 ) {
@@ -219,6 +235,7 @@ struct MissionDetailView: View {
                         mission.isComplete = true
                         showMoment = true
                     }
+                    MissionStore.save(mission)
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
                 .zIndex(9)
@@ -227,7 +244,6 @@ struct MissionDetailView: View {
             // Fledge moment
             if showMoment {
                 FledgeMomentView(
-                    winText: mission.win.text(for: activeMood),
                     pillarColor: pillarColor,
                     pillar: mission.pillar
                 ) {
@@ -240,6 +256,8 @@ struct MissionDetailView: View {
                 .zIndex(10)
             }
         }
+        .sensoryFeedback(.success, trigger: justCompleted)
+        .sensoryFeedback(.impact(weight: .heavy), trigger: activeMood)
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -248,9 +266,11 @@ struct MissionDetailView: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(.subheadline))
+                            .fontWeight(.semibold)
                         Text("Back")
-                            .font(.system(size: 15, weight: .medium, design: .rounded))
+                            .font(.system(.subheadline, design: .rounded))
+                            .fontWeight(.medium)
                     }
                     .foregroundColor(pillarColor)
                 }
@@ -273,6 +293,7 @@ struct MissionDetailView: View {
                     )
                     updated.activeMood = moodManager.currentMood
                     mission.progress = updated
+                    MissionStore.save(mission)
                     showMoodSwitch = false
                 }
             )
@@ -312,64 +333,65 @@ struct MissionDetailView: View {
 }
 
 // MARK: - Mission Steps View
-
 struct MissionStepsView: View {
     let steps: [MissionStep]
     let progress: MissionProgress?
     let pillarColor: Color
     let onToggle: (UUID) -> Void
-    
+
     @State private var appeared = false
-    
+
     var completedCount: Int {
         progress?.completedCount(for: steps) ?? 0
     }
-    
+
     var progressFraction: Double {
         guard !steps.isEmpty else { return 0 }
         return Double(completedCount) / Double(steps.count)
     }
-    
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                HStack(spacing: 6) {
-                    Image(systemName: "checklist")
-                        .font(.system(size: 11, weight: .bold))
-                    Text("MISSION STEPS")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .tracking(1.5)
+        VStack(alignment: .leading, spacing: 20) {
+
+            // Header
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Steps")
+                        .font(.system(.title2, design: .rounded))
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Text("\(completedCount) of \(steps.count)")
+                        .font(.system(.subheadline, design: .rounded))
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
                 }
-                .foregroundColor(pillarColor)
-                
-                Spacer()
-                
-                Text("\(completedCount) of \(steps.count)")
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .foregroundColor(.secondary)
-            }
-            
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Color.primary.opacity(0.08))
-                        .frame(height: 3)
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(pillarColor)
-                        .frame(width: geo.size.width * progressFraction, height: 3)
-                        .animation(.spring(response: 0.4), value: progressFraction)
+
+                // Progress bar
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.primary.opacity(0.07))
+                            .frame(height: 4)
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(pillarColor)
+                            .frame(width: geo.size.width * progressFraction, height: 4)
+                            .animation(.spring(response: 0.4), value: progressFraction)
+                    }
                 }
+                .frame(maxWidth: .infinity)
+                .frame(height: 4)
             }
-            .frame(maxWidth: .infinity)
-            .frame(height:3)
-            
-            VStack(spacing: 8) {
+
+            // Step rows
+            VStack(spacing: 10) {
                 ForEach(Array(steps.enumerated()), id: \.element.id) { index, step in
                     MissionStepRow(
                         step: step,
                         isChecked: progress?.isChecked(step.id) ?? false,
                         pillarColor: pillarColor,
-                        index: index
+                        index: index,
+                        autoExpand: index == (steps.firstIndex(where: { !(progress?.isChecked($0.id) ?? false) }) ?? 0)
                     ) {
                         onToggle(step.id)
                     }
@@ -394,85 +416,143 @@ struct MissionStepRow: View {
     let isChecked: Bool
     let pillarColor: Color
     let index: Int
+    let autoExpand: Bool
     let onToggle: () -> Void
-    
+
+    @State private var isExpanded = false
+
     var body: some View {
-        Button(action: onToggle) {
-            HStack(alignment: .top, spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(isChecked ? pillarColor : Color.clear)
-                        .frame(width: 24, height: 24)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .strokeBorder(
-                                    isChecked ? pillarColor : Color.primary.opacity(0.2),
-                                    lineWidth: 1.5
-                                )
-                        )
-                    
-                    if isChecked {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.white)
-                            .transition(.scale.combined(with: .opacity))
-                    } else {
-                        Text("\(step.number)")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
-                            .foregroundColor(.secondary)
+        VStack(alignment: .leading, spacing: 0) {
+
+            // MARK: Header row
+            HStack(alignment: .center, spacing: 14) {
+
+                // Checkbox — isolated button
+                Button(action: {
+                    onToggle()
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(isChecked ? pillarColor : Color.clear)
+                            .frame(width: 28, height: 28)
+                            .overlay(
+                                Circle()
+                                    .strokeBorder(
+                                        isChecked ? pillarColor : Color.primary.opacity(0.18),
+                                        lineWidth: 1.5
+                                    )
+                            )
+                        if isChecked {
+                            Image(systemName: "checkmark")
+                                .font(.system(.caption2))
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .transition(.scale.combined(with: .opacity))
+                        } else {
+                            Text("\(step.number)")
+                                .font(.system(.caption2, design: .rounded))
+                                .fontWeight(.semibold)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .animation(.spring(response: 0.3), value: isChecked)
+                }
+                .buttonStyle(.plain)
+
+                // Title + chevron — tap to expand
+                HStack(spacing: 8) {
+                    Text(step.action)
+                        .font(.system(.subheadline, design: .rounded))
+                        .fontWeight(.semibold)
+                        .foregroundColor(isChecked ? .secondary : .primary)
+                        .strikethrough(isChecked, color: .secondary.opacity(0.5))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(.caption2))
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary.opacity(0.35))
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                        .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isExpanded)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        isExpanded.toggle()
                     }
                 }
-                .animation(.spring(response: 0.3), value: isChecked)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(step.action)
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .foregroundColor(isChecked ? .secondary : .primary)
-                        .strikethrough(isChecked, color: .secondary)
-                    
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+
+            // MARK: Expanded detail
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 10) {
+
+                    // Divider
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.05))
+                        .frame(height: 1)
+                        .padding(.horizontal, 16)
+
                     Text(step.howTo)
-                        .font(.system(size: 12, design: .rounded))
+                        .font(.system(.subheadline, design: .rounded))
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                        .lineSpacing(3)
-                    
+                        .lineSpacing(4)
+                        .padding(.horizontal, 16)
+
                     if let tip = step.tip {
-                        HStack(spacing: 4) {
-                            Text("Pro move:")
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "lightbulb.fill")
+                                .font(.system(.caption2))
+                                .foregroundColor(pillarColor)
+                                .padding(.top, 1)
                             Text(tip)
-                                .font(.system(size: 11, design: .rounded))
+                                .font(.system(.footnote, design: .rounded))
+                                .foregroundColor(pillarColor.opacity(0.9))
+                                .fixedSize(horizontal: false, vertical: true)
+                                .lineSpacing(3)
                         }
-                        .foregroundColor(pillarColor.opacity(0.8))
-                        .padding(.top, 2)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(pillarColor.opacity(0.08))
+                        )
+                        .padding(.horizontal, 16)
                     }
                 }
-                
-                Spacer()
+                .padding(.bottom, 14)
+                .transition(.opacity)
             }
-            .padding(14)
-            .background {
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(isChecked
-                        ? pillarColor.opacity(0.06)
-                        : Color.primary.opacity(0.03)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .strokeBorder(
-                                isChecked
-                                    ? pillarColor.opacity(0.20)
-                                    : Color.primary.opacity(0.06),
-                                lineWidth: 1
-                            )
-                    )
-            }
-            .opacity(isChecked ? 0.7 : 1.0)
-            .animation(.easeOut(duration: 0.2), value: isChecked)
         }
-        .buttonStyle(.plain)
-        .frame(maxWidth: .infinity)
+        .clipped()
+        .background {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(isChecked
+                    ? pillarColor.opacity(0.05)
+                    : Color.primary.opacity(colorScheme == .dark ? 0.05 : 0.03)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(
+                            isChecked ? pillarColor.opacity(0.15) : Color.primary.opacity(0.06),
+                            lineWidth: 1
+                        )
+                )
+        }
+        .opacity(isChecked ? 0.65 : 1.0)
+        .animation(.easeOut(duration: 0.2), value: isChecked)
+        .onAppear {
+            isExpanded = autoExpand
+        }
+        .sensoryFeedback(isChecked ? .impact(weight: .medium) : .impact(weight: .light), trigger: isChecked)
+        .sensoryFeedback(.selection, trigger: isExpanded)
     }
+   
+
+    @Environment(\.colorScheme) var colorScheme
 }
 
 
@@ -499,18 +579,21 @@ struct MissionBottomBar: View {
             VStack(spacing: 8) {
                 HStack(spacing: 6) {
                     Image(systemName: "star.fill")
-                        .font(.system(size: 11))
+                        .font(.system(.caption2))
                     Text("\(xpValue) XP on completion")
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .font(.system(.caption, design: .rounded))
+                        .fontWeight(.semibold)
                 }
                 .foregroundColor(pillarColor.opacity(0.7))
                 
                 Button(action: onComplete) {
                     HStack(spacing: 10) {
                         Image(systemName: allStepsComplete ? "checkmark" : "lock.fill")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.system(.headline))
+                            .fontWeight(.bold)
                         Text(allStepsComplete ? "Mission Complete" : "Complete all steps first")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .font(.system(.headline, design: .rounded))
+                            .fontWeight(.bold)
                     }
                     .foregroundColor(allStepsComplete ? .white : .secondary)
                     .frame(maxWidth: .infinity)
@@ -552,7 +635,8 @@ struct MoodSwitchSheet: View {
                     MoodPill(mood: previousMood, label: "Started")
                     
                     Image(systemName: "arrow.right")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(.subheadline))
+                        .fontWeight(.semibold)
                         .foregroundColor(.secondary)
                     
                     MoodPill(mood: currentMood, label: "Today")
@@ -561,12 +645,13 @@ struct MoodSwitchSheet: View {
                 
                 VStack(spacing: 8) {
                     Text("You're feeling different today.")
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .font(.system(.title3, design: .rounded))
+                        .fontWeight(.bold)
                         .foregroundColor(.primary)
                         .multilineTextAlignment(.center)
                     
                     Text("You started this mission feeling \(previousMood.rawValue.lowercased()). Today you're \(currentMood.rawValue.lowercased()). Want to see a different version?")
-                        .font(.system(size: 14, design: .rounded))
+                        .font(.system(.subheadline, design: .rounded))
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                         .lineSpacing(3)
@@ -576,7 +661,8 @@ struct MoodSwitchSheet: View {
                 VStack(spacing: 10) {
                     Button(action: onSwitch) {
                         Text("Switch to \(currentMood.rawValue) version →")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .font(.system(.headline, design: .rounded))
+                            .fontWeight(.bold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
@@ -589,7 +675,7 @@ struct MoodSwitchSheet: View {
                     
                     Button(action: onKeep) {
                         Text("Keep \(previousMood.rawValue.lowercased()) version")
-                            .font(.system(size: 15, design: .rounded))
+                            .font(.system(.headline, design: .rounded))
                             .foregroundColor(.secondary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
@@ -612,15 +698,17 @@ struct MoodPill: View {
     var body: some View {
         VStack(spacing: 6) {
             Text(label)
-                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .font(.system(.caption2, design: .rounded))
+                .fontWeight(.bold)
                 .foregroundColor(.secondary)
                 .tracking(1)
             
             HStack(spacing: 5) {
                 Image(systemName: mood.icon)
-                    .font(.system(size: 11))
+                    .font(.system(.caption2))
                 Text(mood.rawValue)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .font(.system(.subheadline, design: .rounded))
+                    .fontWeight(.semibold)
             }
             .foregroundColor(mood.color)
             .padding(.horizontal, 12)
@@ -659,59 +747,43 @@ struct MoodAdaptiveSection: View {
     let style: SectionStyle
     let appeared: Bool
     let delay: Double
-    
+
     @EnvironmentObject var moodManager: MoodManager
-    
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 11, weight: .bold))
-                Text(label)
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .tracking(1.5)
-                
-                Spacer()
-                
-                // Mood indicator pill
-                HStack(spacing: 4) {
-                    Image(systemName: moodManager.currentMood.icon)
-                        .font(.system(size: 9))
-                    Text(moodManager.currentMood.rawValue)
-                        .font(.system(size: 9, weight: .semibold, design: .rounded))
-                }
-                .foregroundColor(moodManager.currentMood.color.opacity(0.8))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(
-                    Capsule()
-                        .fill(moodManager.currentMood.color.opacity(0.10))
-                )
-            }
-            .foregroundColor(color)
-            
+        Group {
             if style == .briefing {
-                Text(content)
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                    .foregroundColor(.primary)
-                    .lineSpacing(4)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background {
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(color.opacity(0.08))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .strokeBorder(color.opacity(0.18), lineWidth: 1)
-                            )
-                    }
+                // Blockquote style — the emotional hook
+                HStack(alignment: .top, spacing: 16) {
+                    // Left accent bar
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(color)
+                        .frame(width: 3)
+                        .padding(.vertical, 2)
+
+                    Text(content)
+                        .font(.system(.title3, design: .rounded))
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .lineSpacing(5)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 4)
+
             } else {
-                Text(content)
-                    .font(.system(size: 15, design: .rounded))
-                    .foregroundColor(.secondary)
-                    .lineSpacing(5)
-                    .fixedSize(horizontal: false, vertical: true)
+                // Pull quote style — editorial, thoughtful
+                VStack(alignment: .leading, spacing: 14) {
+                    Image(systemName: "quote.opening")
+                        .font(.system(.title2))
+                        .fontWeight(.bold)
+                        .foregroundColor(color.opacity(0.35))
+
+                    Text(content)
+                        .font(.system(.callout, design: .rounded))
+                        .foregroundColor(.secondary)
+                        .lineSpacing(6)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
         .opacity(appeared ? 1 : 0)
@@ -725,27 +797,21 @@ struct ObjectiveView: View {
     let objective: String
     let pillarColor: Color
     let appeared: Bool
-    
+
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             Image(systemName: "scope")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(.subheadline))
+                .fontWeight(.semibold)
                 .foregroundColor(pillarColor)
-            
+                .padding(.top, 1)
+
             Text(objective)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                .foregroundColor(.primary)
+                .font(.system(.subheadline, design: .rounded))
+                .fontWeight(.medium)
+                .foregroundColor(.primary.opacity(0.8))
                 .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background {
-            RoundedRectangle(cornerRadius: 14)
-                .fill(pillarColor.opacity(0.06))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .strokeBorder(pillarColor.opacity(0.15), lineWidth: 1)
-                )
+                .lineSpacing(4)
         }
         .opacity(appeared ? 1 : 0)
         .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.15), value: appeared)
@@ -757,48 +823,55 @@ struct MissionResourcesView: View {
     let resources: [MissionResource]
     let pillarColor: Color
     @State private var appeared = false
-    
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 6) {
-                Image(systemName: "map")
-                    .font(.system(size: 11, weight: .bold))
-                Text("RESOURCES")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .tracking(1.5)
-            }
-            .foregroundColor(pillarColor)
-            
-            VStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 20) {
+
+            // Header
+            Text("Resources")
+                .font(.system(.title2, design: .rounded))
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+
+            VStack(spacing: 12) {
                 ForEach(resources) { resource in
-                    HStack(alignment: .top, spacing: 10) {
+                    HStack(alignment: .top, spacing: 14) {
+
+                        // Icon
                         Text(resource.icon)
-                            .font(.system(size: 14))
-                        
-                        VStack(alignment: .leading, spacing: 2) {
+                            .font(.system(.title3))
+                            .frame(width: 40, height: 40)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.primary.opacity(0.05))
+                            )
+
+                        // Text
+                        VStack(alignment: .leading, spacing: 5) {
                             Text(resource.name)
-                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                                .font(.system(.subheadline, design: .rounded))
+                                .fontWeight(.semibold)
                                 .foregroundColor(.primary)
                             Text(resource.detail)
-                                .font(.system(size: 12, design: .rounded))
+                                .font(.system(.subheadline, design: .rounded))
                                 .foregroundColor(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
-                                .lineSpacing(2)
+                                .lineSpacing(4)
                         }
-                        
+
                         Spacer()
                     }
-                    .padding(12)
+                    .padding(16)
                     .background {
-                        RoundedRectangle(cornerRadius: 12)
+                        RoundedRectangle(cornerRadius: 16)
                             .fill(Color.primary.opacity(0.03))
                             .overlay(
-                                RoundedRectangle(cornerRadius: 12)
+                                RoundedRectangle(cornerRadius: 16)
                                     .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
                             )
                     }
                     .opacity(appeared ? 1 : 0)
-                    .animation(.easeOut(duration: 0.3).delay(0.05), value: appeared)
+                    .animation(.easeOut(duration: 0.3).delay(Double(resources.firstIndex(where: { $0.id == resource.id }) ?? 0) * 0.06), value: appeared)
                 }
             }
         }
@@ -815,49 +888,103 @@ struct WinCardView: View {
     let pillarColor: Color
     let onContinue: () -> Void
     
+    @State private var checkmarkScale: CGFloat = 0.001
+    @State private var particlesBurst = false
+    @State private var displayedXP = 0
+    @State private var glowPulse = false
+    
+    let particleCount = 12
+    func particleAngle(_ index: Int) -> Double { Double(index) * (360.0 / Double(particleCount)) }
+    func particleRadius(_ index: Int) -> CGFloat { index % 2 == 0 ? 55 : 38 }
+    func particleSize(_ index: Int) -> CGFloat { index % 3 == 0 ? 7 : 5 }
+    
     var body: some View {
         VStack {
             Spacer()
-            VStack(spacing: 16) {
-                // XP earned
-                HStack(spacing: 6) {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 14))
-                    Text("+\(xpValue) XP earned")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                }
-                .foregroundColor(pillarColor)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule().fill(pillarColor.opacity(0.12))
-                )
+            VStack(spacing: 20) {
                 
+                // ── Checkmark + particle burst ──────────────────────────────
                 ZStack {
+                    // Particles — burst outward on appear
+                    ForEach(0..<particleCount, id: \.self) { i in
+                        let angle = particleAngle(i) * .pi / 180.0
+                        let radius = particleRadius(i)
+                        Circle()
+                            .fill(pillarColor.opacity(0.70))
+                            .frame(width: particleSize(i), height: particleSize(i))
+                            .offset(
+                                x: particlesBurst ? cos(angle) * radius : 0,
+                                y: particlesBurst ? sin(angle) * radius : 0
+                            )
+                            .opacity(particlesBurst ? 0 : 1)
+                            .animation(
+                                .spring(response: 0.55, dampingFraction: 0.62)
+                                .delay(0.20 + Double(i) * 0.018), value: particlesBurst
+                            )
+                    }
+                    
+                    // Outer glow ring — breathes
+                    Circle()
+                        .fill(pillarColor.opacity(glowPulse ? 0.22 : 0.07))
+                        .frame(width: 96, height: 96)
+                        .blur(radius: 14)
+                        .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: glowPulse)
+                    
+                    // Glass circle
                     Circle()
                         .fill(pillarColor.opacity(0.15))
-                        .frame(width: 56, height: 56)
+                        .frame(width: 72, height: 72)
+                        .overlay(Circle().strokeBorder(pillarColor.opacity(0.30), lineWidth: 1.5))
+                    
+                    // Checkmark — springs in
                     Image(systemName: "checkmark")
-                        .font(.system(size: 22, weight: .bold))
+                        .font(.system(.title2))
+                        .fontWeight(.bold)
                         .foregroundColor(pillarColor)
+                        .scaleEffect(checkmarkScale)
+                        .animation(
+                            .spring(response: 0.50, dampingFraction: 0.55).delay(0.10),
+                            value: checkmarkScale
+                        )
                 }
+                .padding(.top, 10)
                 
+                // ── XP Earned (counts up) ───────────────────────────────────
+                HStack(spacing: 6) {
+                    Image(systemName: "star.fill")
+                        .font(.system(.subheadline))
+                    Text("+\(displayedXP) XP earned")
+                        .font(.system(.subheadline, design: .rounded))
+                        .fontWeight(.bold)
+                        .contentTransition(.numericText(value: Double(displayedXP)))
+                }
+                .foregroundColor(pillarColor)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Capsule().fill(pillarColor.opacity(0.12)))
+                .padding(.top, -4)
+                
+                // ── Win Text ────────────────────────────────────────────────
                 Text(winText)
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
+                    .font(.system(.title3, design: .rounded))
+                    .fontWeight(.bold)
                     .foregroundColor(.primary)
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
                     .padding(.horizontal, 8)
                 
+                // ── Button ──────────────────────────────────────────────────
                 Button(action: onContinue) {
                     Text("See your moment →")
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .font(.system(.headline, design: .rounded))
+                        .fontWeight(.bold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                         .background(RoundedRectangle(cornerRadius: 14).fill(pillarColor))
                 }
                 .buttonStyle(.plain)
+                .padding(.top, 6)
             }
             .padding(28)
             .background {
@@ -872,80 +999,156 @@ struct WinCardView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 16)
         }
+        .onAppear {
+            // Checkmark spring
+            withAnimation {
+                checkmarkScale = 1.0
+            }
+            // Particle burst
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                particlesBurst = true
+            }
+            // XP counter
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                withAnimation(.spring(response: 0.85)) {
+                    displayedXP = xpValue
+                }
+            }
+            // Glow pulse
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+                withAnimation {
+                    glowPulse = true
+                }
+            }
+        }
     }
 }
 
 // MARK: - Fledge Moment
 struct FledgeMomentView: View {
-    let winText: String
     let pillarColor: Color
     let pillar: Pillar
     let onDismiss: () -> Void
     
+    @EnvironmentObject var moodManager: MoodManager
+    @Environment(\.colorScheme) var colorScheme
+    
     @State private var appeared = false
     @State private var starScale: CGFloat = 0.3
+    @State private var glowPulse = false
     
     var body: some View {
         ZStack {
-            Color("AtmosphereTop").ignoresSafeArea()
-            RadialGradient(
-                colors: [pillarColor.opacity(0.25), Color("AtmosphereTop")],
-                center: .center,
-                startRadius: 80,
-                endRadius: 500
+            // ── Mood-reactive sky (matches dashboard exactly) ───────────────
+            LinearGradient(
+                colors: colorScheme == .dark
+                    ? moodManager.currentMood.atmosphereColors
+                    : moodManager.currentMood.lightModeAtmosphereColors,
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
             
+            // Pillar radial glow
+            RadialGradient(
+                colors: [pillarColor.opacity(colorScheme == .dark ? 0.30 : 0.15), Color.clear],
+                center: .center,
+                startRadius: 60,
+                endRadius: 520
+            )
+            .ignoresSafeArea()
+            
+            // ── Starfield (dark mode only — same Canvas technique as SkyView) ─
+            if colorScheme == .dark {
+                TimelineView(.animation) { timeline in
+                    Canvas { ctx, size in
+                        let t = timeline.date.timeIntervalSinceReferenceDate
+                        for i in 1...30 {
+                            let x  = CGFloat((i * 73  + 11) % 100) / 100.0 * size.width
+                            let y  = CGFloat((i * 89  + 31) % 100) / 100.0 * size.height
+                            let tw = (sin(t * Double(i % 7 + 1) * 0.45 + Double(i) * 0.9) + 1.0) / 2.0
+                            let r: CGFloat = i % 5 == 0 ? 1.6 : (i % 3 == 0 ? 1.1 : 0.7)
+                            let alpha = 0.08 + 0.20 * tw
+                            ctx.fill(
+                                Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2)),
+                                with: .color(.white.opacity(alpha))
+                            )
+                        }
+                    }
+                }
+                .ignoresSafeArea()
+            }
+            
+            // ── Content ──────────────────────────────────────────────────────
             VStack(spacing: 0) {
                 Spacer()
                 
                 ZStack {
+                    // Expanding concentric rings
                     ForEach(0..<3, id: \.self) { i in
                         Circle()
-                            .strokeBorder(pillarColor.opacity(0.12 - Double(i) * 0.03), lineWidth: 1.5)
+                            .strokeBorder(pillarColor.opacity(0.18 - Double(i) * 0.05), lineWidth: 1.5)
                             .frame(
-                                width: appeared ? CGFloat(80 + i * 55) : 20,
-                                height: appeared ? CGFloat(80 + i * 55) : 20
+                                width: appeared ? CGFloat(80 + i * 65) : 20,
+                                height: appeared ? CGFloat(80 + i * 65) : 20
                             )
                             .animation(.spring(response: 0.8, dampingFraction: 0.6).delay(Double(i) * 0.1), value: appeared)
                     }
                     
+                    // Floating dots
                     ForEach(0..<8, id: \.self) { i in
+                        let angle = Double(i) * .pi / 4
                         Circle()
-                            .fill(pillarColor.opacity(0.6))
-                            .frame(width: 5, height: 5)
+                            .fill(pillarColor.opacity(0.65))
+                            .frame(width: 6, height: 6)
                             .offset(
-                                x: appeared ? cos(Double(i) * .pi / 4) * 65 : 0,
-                                y: appeared ? sin(Double(i) * .pi / 4) * 65 : 0
+                                x: appeared ? cos(angle) * 72 : 0,
+                                y: appeared ? sin(angle) * 72 : 0
                             )
                             .opacity(appeared ? 1 : 0)
-                            .animation(.spring(response: 0.5, dampingFraction: 0.5).delay(0.1), value: appeared)
+                            .animation(
+                                .spring(response: 0.55, dampingFraction: 0.52).delay(0.12), value: appeared
+                            )
                     }
                     
+                    // Outer glow halo
+                    Circle()
+                        .fill(pillarColor.opacity(glowPulse ? 0.20 : 0.06))
+                        .frame(width: 130, height: 130)
+                        .blur(radius: 24)
+                        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: glowPulse)
+                    
+                    // Main checkmark
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 80))
-                        .foregroundStyle(LinearGradient(
-                            colors: [pillarColor.opacity(0.8), pillarColor],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [pillarColor.opacity(0.85), pillarColor],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
                         .scaleEffect(starScale)
-                        .shadow(color: pillarColor.opacity(0.5), radius: 24)
+                        .shadow(color: pillarColor.opacity(0.55), radius: 28)
                 }
-                .frame(height: 200)
+                .frame(height: 220)
                 
+                // Moment text
                 Text(FledgeMoment.forPillar(pillar))
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .font(.system(.title, design: .rounded))
+                    .fontWeight(.bold)
                     .foregroundColor(.primary)
                     .multilineTextAlignment(.center)
                     .lineSpacing(6)
                     .padding(.horizontal, 32)
-                    .padding(.top, 36)
+                    .padding(.top, 42)
                     .opacity(appeared ? 1 : 0)
                     .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.3), value: appeared)
                 
+                // Pillar tag
                 Text(pillar.rawValue.uppercased())
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .font(.system(.caption, design: .rounded))
+                    .fontWeight(.bold)
                     .foregroundColor(pillarColor)
                     .tracking(2)
                     .padding(.top, 14)
@@ -956,7 +1159,8 @@ struct FledgeMomentView: View {
                 
                 Button(action: onDismiss) {
                     Text("Continue →")
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .font(.system(.headline, design: .rounded))
+                        .fontWeight(.bold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 18)
@@ -973,6 +1177,9 @@ struct FledgeMomentView: View {
                 starScale = 1.0
                 appeared = true
             }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                withAnimation { glowPulse = true }
+            }
         }
     }
 }
@@ -980,50 +1187,45 @@ struct FledgeMomentView: View {
 struct MissionHeroView: View {
     let mission: Mission
     let pillarColor: Color
-    
+
     var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            RoundedRectangle(cornerRadius: 32)
-                .fill(.thickMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 32)
-                        .fill(pillarColor.opacity(0.08))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 32)
-                        .strokeBorder(pillarColor.opacity(0.18), lineWidth: 1)
-                )
-            
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 6) {
-                    Image(systemName: mission.pillar.icon)
-                        .font(.system(size: 11, weight: .semibold))
-                    Text(mission.pillar.rawValue)
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .textCase(.uppercase)
-                        .tracking(0.8)
-                }
-                .foregroundColor(pillarColor)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(Capsule().fill(pillarColor.opacity(0.15)))
-                
-                Text(mission.title)
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
-                    .foregroundColor(Color("CardText"))
-                
-                HStack(spacing: 4) {
-                    Image(systemName: "clock")
-                        .font(.system(size: 11))
-                    Text(mission.duration)
-                        .font(.system(size: 12, design: .rounded))
-                }
-                .foregroundColor(Color("CardSubtext"))
+        VStack(alignment: .leading, spacing: 10) {
+
+            // Pillar pill — small, subtle
+            HStack(spacing: 6) {
+                Image(systemName: mission.pillar.icon)
+                    .font(.system(.caption2))
+                    .fontWeight(.semibold)
+                Text(mission.pillar.rawValue)
+                    .font(.system(.caption2, design: .rounded))
+                    .fontWeight(.semibold)
+                    .textCase(.uppercase)
+                    .tracking(0.8)
             }
-            .frame(maxWidth: .infinity)
-            .padding(22)
+            .foregroundColor(pillarColor)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(Capsule().fill(pillarColor.opacity(0.12)))
+
+            // Title — large, breathing, no box
+            Text(mission.title)
+                .font(.system(.largeTitle, design: .rounded))
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            // Duration
+            HStack(spacing: 4) {
+                Image(systemName: "clock")
+                    .font(.system(.caption))
+                Text(mission.duration)
+                    .font(.system(.subheadline, design: .rounded))
+            }
+            .foregroundColor(.secondary)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
     }
 }
 
@@ -1040,16 +1242,18 @@ struct MissionSection: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(.caption))
+                    .fontWeight(.semibold)
                 Text(label)
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .font(.system(.caption, design: .rounded))
+                    .fontWeight(.bold)
                     .textCase(.uppercase)
                     .tracking(1.0)
             }
             .foregroundColor(color)
             
             Text(content)
-                .font(.system(size: 16, design: .rounded))
+                .font(.system(.callout, design: .rounded))
                 .foregroundColor(Color("CardSubtext"))
                 .lineSpacing(5)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1064,28 +1268,34 @@ struct MissionSection: View {
 struct RevealMoveButton: View {
     let pillarColor: Color
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 10) {
-                Image(systemName: "arrow.right.circle")
-                    .font(.system(size: 16))
-                Text("Show me what to do")
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Ready to move?")
+                        .font(.system(.headline, design: .rounded))
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    Text("See the steps for this mission")
+                        .font(.system(.subheadline, design: .rounded))
+                        .foregroundColor(.secondary)
+                }
                 Spacer()
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 12))
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.system(.title))
+                    .foregroundColor(pillarColor)
             }
-            .foregroundColor(pillarColor)
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(pillarColor.opacity(0.08))
+            .padding(.horizontal, 20)
+            .padding(.vertical, 18)
+            .background {
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(pillarColor.opacity(0.07))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .strokeBorder(pillarColor.opacity(0.2), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 20)
+                            .strokeBorder(pillarColor.opacity(0.18), lineWidth: 1)
                     )
-            )
+            }
         }
         .buttonStyle(.plain)
     }
@@ -1110,9 +1320,11 @@ struct BottomActionButton: View {
             Button(action: action) {
                 HStack(spacing: 10) {
                     Image(systemName: icon)
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(.subheadline))
+                        .fontWeight(.bold)
                     Text(label)
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .font(.system(.headline, design: .rounded))
+                        .fontWeight(.bold)
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
@@ -1134,9 +1346,10 @@ struct CompletedBadge: View {
         HStack(spacing: 10) {
             Image(systemName: "checkmark.circle.fill")
                 .foregroundColor(pillarColor)
-                .font(.system(size: 18))
+                .font(.system(.title3))
             Text("Mission complete")
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .font(.system(.subheadline, design: .rounded))
+                .fontWeight(.semibold)
                 .foregroundColor(pillarColor)
             Spacer()
         }
@@ -1147,6 +1360,3 @@ struct CompletedBadge: View {
         )
     }
 }
-
-
-

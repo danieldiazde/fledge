@@ -14,22 +14,15 @@ struct ContentView: View {
     var body: some View {
         Group {
             if !arrivalManager.hasSetArrivalDate {
-                OnboardingView()
-                    .environmentObject(arrivalManager)
-                    .environmentObject(userProfile)
-            } else if !userProfile.isComplete {
+                NarrativeOnboardingView()
+            }
+            else if !userProfile.isComplete {
                 ProfileSetupView()
-                    .environmentObject(arrivalManager)
-                    .environmentObject(userProfile)
             } else {
                 MainTabView()
-                    .environmentObject(arrivalManager)
-                    .environmentObject(userProfile)
             }
         }
+        .environmentObject(arrivalManager)
+        .environmentObject(userProfile)
     }
-}
-
-#Preview {
-    ContentView()
 }

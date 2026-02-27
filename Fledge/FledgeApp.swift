@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct FledgeApp: App {
@@ -20,5 +21,6 @@ struct FledgeApp: App {
                 .environmentObject(userProfile)
                 .environmentObject(moodManager)
         }
+        .modelContainer(for: [Mission.self, MoodStepRecord.self, MoodResourceRecord.self])
     }
 }
