@@ -430,14 +430,3 @@ struct CompletedMissionCard: View {
     }
 }
 
-// MARK: - Pillar sky color (matches SkyView's palette)
-
-private extension Pillar {
-    var skyColor: Color {
-        switch self {
-        case .city:      return Color(red: 0.5,  green: 0.65, blue: 1.0)
-        case .adultMode: return Color(red: 1.0,  green: 0.65, blue: 0.45)
-        case .growth:    return Color(red: 0.5,  green: 0.90, blue: 0.65)
-        }
-    }
-}
