@@ -9,10 +9,10 @@ import SwiftUI
 
 struct ProfileSetupView: View {
     @EnvironmentObject var userProfile: UserProfile
+    @Environment(\.colorScheme) var colorScheme
     
     @State private var currentQuestion = 0
     @State private var appeared = false
-    @State private var transitioning = false
     @State private var showMoment = false
     
     let questions: [ProfileQuestion] = [
@@ -52,22 +52,37 @@ struct ProfileSetupView: View {
     
     var body: some View {
         ZStack {
-            Color("Background")
-                .ignoresSafeArea()
+            // Atmospheric background
+            LinearGradient(
+                colors: [Color("AtmosphereTop"), Color("AtmosphereBottom")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+            
+            RadialGradient(
+                colors: [Color.accentColor.opacity(0.08), Color.clear],
+                center: .top,
+                startRadius: 0,
+                endRadius: 450
+            )
+            .ignoresSafeArea()
             
             if showMoment {
-                // Transition screen before dashboard
                 ReadyView()
                     .environmentObject(userProfile)
                     .transition(.opacity)
             } else {
                 VStack(spacing: 0) {
                     
-                    // Progress bar
-                    HStack(spacing: 6) {
+                    // Progress pills
+                    HStack(spacing: 8) {
                         ForEach(0..<3, id: \.self) { i in
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(i <= currentQuestion ? Color.accentColor : Color.accentColor.opacity(0.2))
+                                .fill(i <= currentQuestion
+                                    ? Color.accentColor
+                                    : Color.primary.opacity(0.12)
+                                )
                                 .frame(height: 4)
                                 .animation(.spring(response: 0.4), value: currentQuestion)
                         }
@@ -80,18 +95,20 @@ struct ProfileSetupView: View {
                     // Question
                     VStack(alignment: .leading, spacing: 12) {
                         Text(questions[currentQuestion].number)
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .font(.system(.callout, design: .rounded))
+                            .fontWeight(.bold)
                             .foregroundColor(Color.accentColor)
                             .tracking(2)
                         
                         Text(questions[currentQuestion].prompt)
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
-                            .foregroundColor(Color("PrimaryText"))
+                            .font(.system(.title, design: .rounded)) // Fixed typo from .title1
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
                             .lineSpacing(4)
                         
                         Text(questions[currentQuestion].subtitle)
-                            .font(.system(size: 15, design: .rounded))
-                            .foregroundColor(Color("SecondaryText"))
+                            .font(.system(.headline, design: .rounded))
+                            .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 28)
@@ -101,22 +118,23 @@ struct ProfileSetupView: View {
                     Spacer()
                     
                     // Options
-                    VStack(spacing: 12) {
+                    VStack(spacing: 10) {
                         ForEach(Array(questions[currentQuestion].options.enumerated()), id: \.offset) { index, option in
-                            OptionButton(
+                            ProfileOptionButton(
                                 option: option,
-                                delay: Double(index) * 0.08
+                                delay: Double(index) * 0.07
                             ) {
                                 selectOption(option.label)
                             }
                         }
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 20)
                     .padding(.bottom, 48)
                     .opacity(appeared ? 1 : 0)
                 }
             }
         }
+        .sensoryFeedback(.impact(weight: .light), trigger: currentQuestion)
         .onAppear {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
                 appeared = true
@@ -125,7 +143,6 @@ struct ProfileSetupView: View {
     }
     
     func selectOption(_ label: String) {
-        // Save answer
         switch currentQuestion {
         case 0: userProfile.goal = label
         case 1: userProfile.diet = label
@@ -133,22 +150,96 @@ struct ProfileSetupView: View {
         default: break
         }
         
-        
         if currentQuestion < 2 {
-            // Animate to next question
-            withAnimation(.easeInOut(duration: 0.25)) {
-                appeared = false
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation(.easeInOut(duration: 0.2)) { appeared = false }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
                 currentQuestion += 1
                 withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                     appeared = true
                 }
             }
         } else {
-            // All done — show ready screen
             withAnimation(.easeInOut(duration: 0.4)) {
                 showMoment = true
+            }
+        }
+    }
+}
+
+// MARK: - Profile Option Button
+struct ProfileOptionButton: View {
+    let option: ProfileOption
+    let delay: Double
+    let action: () -> Void
+    
+    @Environment(\.colorScheme) var colorScheme
+    @State private var appeared = false
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.accentColor.opacity(0.12))
+                        .frame(width: 48, height: 48)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .strokeBorder(Color.accentColor.opacity(0.20), lineWidth: 1)
+                        )
+                    
+                    Image(systemName: option.icon)
+                        .font(.system(.title2))
+                        .foregroundColor(Color.accentColor)
+                }
+                
+                Text(option.label)
+                    .font(.system(.title3, design: .rounded))
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(.subheadline))
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary.opacity(0.5))
+            }
+            .padding(16)
+            .background {
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(colorScheme == .dark
+                        ? AnyShapeStyle(.regularMaterial)
+                        : AnyShapeStyle(Color.white)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .strokeBorder(
+                                colorScheme == .dark
+                                    ? Color.white.opacity(0.07)
+                                    : Color.black.opacity(0.06),
+                                lineWidth: 1
+                            )
+                    )
+                    .shadow(
+                        color: Color.black.opacity(colorScheme == .dark ? 0 : 0.05),
+                        radius: 8, x: 0, y: 3
+                    )
+            }
+            .scaleEffect(isPressed ? 0.97 : 1.0)
+            .animation(.easeInOut(duration: 0.12), value: isPressed)
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
+        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared ? 0 : 14)
+        .onAppear {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(delay)) {
+                appeared = true
             }
         }
     }
@@ -168,136 +259,128 @@ struct ProfileOption {
     let tag: String
 }
 
-// MARK: - Option Button
-struct OptionButton: View {
-    let option: ProfileOption
-    let delay: Double
-    let action: () -> Void
-    
-    @State private var appeared = false
-    @State private var isPressed = false
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 16) {
-                // Icon
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.accentColor.opacity(0.12))
-                        .frame(width: 48, height: 48)
-                    
-                    Image(systemName: option.icon)
-                        .font(.system(size: 20))
-                        .foregroundColor(Color.accentColor)
-                }
-                
-                Text(option.label)
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                    .foregroundColor(Color("PrimaryText"))
-                
-                Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Color("SecondaryText").opacity(0.5))
-            }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 18)
-                    .fill(Color("CardBackground"))
-                    .shadow(color: Color.black.opacity(isPressed ? 0.02 : 0.06), radius: isPressed ? 4 : 12, x: 0, y: isPressed ? 1 : 4)
-            )
-            .scaleEffect(isPressed ? 0.97 : 1.0)
-        }
-        .buttonStyle(.plain)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    withAnimation(.easeInOut(duration: 0.1)) { isPressed = true }
-                }
-                .onEnded { _ in
-                    withAnimation(.easeInOut(duration: 0.1)) { isPressed = false }
-                }
-        )
-        .opacity(appeared ? 1 : 0)
-        .offset(y: appeared ? 0 : 16)
-        .onAppear {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(delay)) {
-                appeared = true
-            }
-        }
-    }
-}
-
 // MARK: - Ready View
 struct ReadyView: View {
     @EnvironmentObject var userProfile: UserProfile
+    @Environment(\.colorScheme) var colorScheme
     @State private var appeared = false
+    @State private var commitProfile = false
     
     var headline: String {
+        let name = userProfile.name.isEmpty ? "" : ", \(userProfile.name)"
         switch userProfile.goal {
-        case "Staying healthy": return "Let's keep you\nstrong out there."
-        case "Saving money": return "Let's make every\neurocent count."
+        case "Staying healthy": return "Let's keep you\nstrong out there\(name)."
+        case "Saving money":    return "Let's make every\npeso count\(name)."
         case "Exploring the city": return "There's a whole\ncity waiting for you."
-        case "Meeting people": return "You're about to\nmeet your people."
-        default: return "Your journey\nstarts now."
+        case "Meeting people":  return "You're about to\nmeet your people."
+        default:                return "Your journey\nstarts now."
         }
     }
     
     var body: some View {
         ZStack {
-            Color("Background")
-                .ignoresSafeArea()
+            LinearGradient(
+                colors: [Color("AtmosphereTop"), Color("AtmosphereBottom")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+            
+            RadialGradient(
+                colors: [Color.accentColor.opacity(0.12), Color.clear],
+                center: .center,
+                startRadius: 0,
+                endRadius: 500
+            )
+            .ignoresSafeArea()
             
             VStack(spacing: 0) {
                 Spacer()
                 
-                VStack(spacing: 20) {
-                    // Animated logo
-                    FledgeLogo(isAppeared: appeared)
+                VStack(spacing: 24) {
+                    ZStack {
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .overlay(
+                                Circle()
+                                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                            )
+                            .frame(width: 110, height: 110)
+                            .shadow(
+                                color: Color.accentColor.opacity(0.15),
+                                radius: 20, x: 0, y: 8
+                            )
+                        
+                    }
+                    .opacity(appeared ? 1 : 0)
+                    .scaleEffect(appeared ? 1 : 0.7)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1), value: appeared)
                     
-                    Text(headline)
-                        .font(.system(size: 36, weight: .bold, design: .rounded))
-                        .foregroundColor(Color("PrimaryText"))
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(4)
-                        .opacity(appeared ? 1 : 0)
-                        .offset(y: appeared ? 0 : 20)
-                    
-                    Text("Your missions are ready.")
-                        .font(.system(size: 17, design: .rounded))
-                        .foregroundColor(Color("SecondaryText"))
-                        .opacity(appeared ? 1 : 0)
+                    VStack(spacing: 10) {
+                        Text(headline)
+                            .font(.system(.largeTitle, design: .rounded))
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(4)
+                        
+                        Text("Your missions are ready.")
+                            .font(.system(.title3, design: .rounded))
+                            .foregroundColor(.secondary)
+                    }
+                    .opacity(appeared ? 1 : 0)
+                    .offset(y: appeared ? 0 : 16)
+                    .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2), value: appeared)
                 }
                 
                 Spacer()
                 
-                // CTA
                 Button {
-                    // Mark profile as complete by setting a flag
-                    // userProfile.isComplete is already true at this point
-                    // We just need ContentView to re-evaluate
-                    userProfile.style = userProfile.style // triggers objectWillChange
-                } label: {
-                    Text("I'm ready →")
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                            commitProfile = true
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                            userProfile.style = userProfile.style
+                        }
+                    } label: {
+                        
+                        Group {
+                           if commitProfile {
+                               ProgressView()
+                                 .tint(.white)
+                           } else {
+                               Text("I'm ready →")
+                           }
+                        }
+                        .font(.system(.title3, design: .rounded))
+                        .fontWeight(.bold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
+                        .frame(height: 56)
                         .padding(.vertical, 18)
                         .background(
                             RoundedRectangle(cornerRadius: 16)
                                 .fill(Color.accentColor)
+                                .shadow(
+                                    color: Color.accentColor.opacity(0.35),
+                                    radius: 12, x: 0, y: 5
+                                )
                         )
                 }
+                .disabled(commitProfile)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 48)
+                .scaleEffect(commitProfile ? 0.95 : 1.0)
                 .opacity(appeared ? 1 : 0)
+                .animation(.easeOut(duration: 0.4).delay(0.4), value: appeared)
             }
         }
+        .sensoryFeedback(.impact(weight: .heavy), trigger: commitProfile)
         .onAppear {
-            withAnimation(.spring(response: 0.7, dampingFraction: 0.7).delay(0.2)) {
+            withAnimation {
                 appeared = true
             }
         }
+        
     }
 }
