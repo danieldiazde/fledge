@@ -199,7 +199,6 @@ struct SkyView: View {
     private var skyCanvasSection: some View {
         GeometryReader { _ in
             ZStack {
-                skyGradient
                 constellationCanvas
                     .accessibilityHidden(true)
                 VStack(spacing: 0) {

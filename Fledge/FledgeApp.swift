@@ -11,15 +11,16 @@ import SwiftData
 @main
 struct FledgeApp: App {
     @StateObject private var arrivalManager = ArrivalManager()
-    @StateObject private var userProfile = UserProfile()
-    @StateObject private var moodManager = MoodManager()
-    
+    @StateObject private var userProfile   = UserProfile()
+    @StateObject private var moodManager   = MoodManager()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(arrivalManager)
                 .environmentObject(userProfile)
                 .environmentObject(moodManager)
+                .onAppear { NotificationManager.shared.requestPermissionAndSchedule() }
         }
         .modelContainer(for: [Mission.self, MoodStepRecord.self, MoodResourceRecord.self])
     }
