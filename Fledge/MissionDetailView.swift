@@ -17,6 +17,7 @@ struct MissionDetailView: View {
 
     @State private var state = MissionDetailState()
     @State private var appeared = false
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     // MARK: - Derived state
 
@@ -44,7 +45,7 @@ struct MissionDetailView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     MissionHeroView(mission: mission, pillarColor: pillarColor)
                         .opacity(appeared ? 1 : 0)
-                        .offset(y: appeared ? 0 : 16)
+                        .offset(y: appeared ? 0 : (reduceMotion ? 0 : 16))
 
                     if MissionData.isLocked(mission) { lockedBanner }
 
@@ -222,7 +223,7 @@ struct MissionDetailView: View {
             }
         } else {
             RevealMoveButton(pillarColor: pillarColor) {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                withAnimation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.5, dampingFraction: 0.8)) {
                     state.showMove = true
                 }
             }
@@ -246,7 +247,7 @@ struct MissionDetailView: View {
                     pillarColor: pillarColor,
                     xpValue: mission.xpValue
                 ) {
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    withAnimation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.5, dampingFraction: 0.8)) {
                         state.justCompleted = true
                         state.showWinCard = true
                         userProfile.totalXP += mission.xpValue
@@ -332,7 +333,7 @@ struct MissionDetailView: View {
             DispatchQueue.main.async { state.showMove = true }
         }
 
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
+        withAnimation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
             appeared = true
         }
     }

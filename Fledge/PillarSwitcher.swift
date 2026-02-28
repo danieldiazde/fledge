@@ -16,6 +16,7 @@ struct MorphingPillarSwitcher: View {
     @Binding var selectedPillar: Pillar
     @Namespace private var heroNamespace
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var accessoryPillars: [Pillar] {
         Pillar.allCases.filter { $0 != selectedPillar }
@@ -30,7 +31,7 @@ struct MorphingPillarSwitcher: View {
             VStack(spacing: 10) {
                 ForEach(accessoryPillars, id: \.self) { pillar in
                     AccessoryPillarCard(pillar: pillar, namespace: heroNamespace, colorScheme: colorScheme) {
-                        withAnimation(.spring(response: 0.45, dampingFraction: 0.78)) {
+                        withAnimation(reduceMotion ? .easeInOut(duration: 0.25) : .spring(response: 0.45, dampingFraction: 0.78)) {
                             selectedPillar = pillar
                         }
                     }
@@ -51,6 +52,7 @@ struct HeroPillarCard: View {
     let pillar: Pillar
     var namespace: Namespace.ID
     var colorScheme: ColorScheme
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var effectiveColor: Color {
         colorScheme == .dark ? pillar.color : pillar.lightModeColor
@@ -86,7 +88,7 @@ struct HeroPillarCard: View {
                     .opacity(showTagline ? 0.85 : 0)
                     .onChange(of: pillar) {
                         showTagline = false
-                        withAnimation(.easeIn(duration: 0.25).delay(0.35)) { showTagline = true }
+                        withAnimation(reduceMotion ? .easeIn(duration: 0.2) : .easeIn(duration: 0.25).delay(0.35)) { showTagline = true }
                     }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

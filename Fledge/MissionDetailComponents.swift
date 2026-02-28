@@ -67,6 +67,7 @@ struct MoodAdaptiveSection: View {
     let delay: Double
 
     @EnvironmentObject var moodManager: MoodManager
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
         Group {
@@ -100,8 +101,8 @@ struct MoodAdaptiveSection: View {
             }
         }
         .opacity(appeared ? 1 : 0)
-        .offset(y: appeared ? 0 : 12)
-        .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(delay), value: appeared)
+        .offset(y: appeared ? 0 : (reduceMotion ? 0 : 12))
+        .animation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.5, dampingFraction: 0.8).delay(delay), value: appeared)
     }
 }
 
@@ -112,6 +113,7 @@ struct ObjectiveView: View {
     let objective: String
     let pillarColor: Color
     let appeared: Bool
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -127,7 +129,7 @@ struct ObjectiveView: View {
                 .lineSpacing(4)
         }
         .opacity(appeared ? 1 : 0)
-        .animation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.15), value: appeared)
+        .animation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.5, dampingFraction: 0.8).delay(0.15), value: appeared)
     }
 }
 
@@ -183,6 +185,7 @@ struct MissionBottomBar: View {
     let pillarColor: Color
     let xpValue: Int
     let onComplete: () -> Void
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
@@ -221,7 +224,7 @@ struct MissionBottomBar: View {
                     }
                 }
                 .disabled(!allStepsComplete)
-                .animation(.spring(response: 0.4), value: allStepsComplete)
+                .animation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.4), value: allStepsComplete)
                 .accessibilityLabel(allStepsComplete ? "Mission complete" : "Complete all steps to unlock this mission.")
                 .accessibilityHint(allStepsComplete ? "Double-tap to earn \(xpValue) XP and mark this mission as complete." : "")
             }

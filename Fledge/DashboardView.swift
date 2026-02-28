@@ -16,6 +16,7 @@ struct DashboardView: View {
     @State private var appeared = false
     @State private var searchText = ""
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
     @FocusState private var isSearchFocused: Bool
 
     var isSearchActive: Bool { isSearchFocused || !searchText.isEmpty }
@@ -77,7 +78,7 @@ struct DashboardView: View {
                             .padding(.horizontal, DashboardLayout.sectionInset)
                             .padding(.bottom, 4)
                             .opacity(appeared ? 1 : 0)
-                            .offset(y: appeared ? 0 : 16)
+                            .offset(y: appeared ? 0 : (reduceMotion ? 0 : 16))
 
                         pillarSwitcherSection
 
@@ -91,7 +92,7 @@ struct DashboardView: View {
                     }
                 }
                 .scrollDismissesKeyboard(.immediately)
-                .animation(.spring(response: 0.42, dampingFraction: 0.82), value: isSearchActive)
+                .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.42, dampingFraction: 0.82), value: isSearchActive)
             }
             .sensoryFeedback(.selection, trigger: selectedPillar)
             #if os(iOS)
@@ -105,7 +106,7 @@ struct DashboardView: View {
                     case .ready:       selectedPillar = .city
                     }
                 }
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
+                withAnimation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
                     appeared = true
                 }
             }
@@ -124,7 +125,7 @@ struct DashboardView: View {
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
-            .animation(.easeInOut(duration: 2.0), value: moodManager.currentMood)
+            .animation(reduceMotion ? .easeInOut(duration: 0.3) : .easeInOut(duration: 2.0), value: moodManager.currentMood)
 
             if isSearchActive {
                 Color.clear
@@ -140,7 +141,7 @@ struct DashboardView: View {
                 center: .top, startRadius: 0, endRadius: 400
             )
             .ignoresSafeArea()
-            .animation(.easeInOut(duration: 2.0), value: moodManager.currentMood)
+            .animation(reduceMotion ? .easeInOut(duration: 0.3) : .easeInOut(duration: 2.0), value: moodManager.currentMood)
         }
     }
 
@@ -200,7 +201,7 @@ struct DashboardView: View {
                         width: geo.size.width * Double(completedCount) / Double(max(totalCount, 1)),
                         height: 4
                     )
-                    .animation(.spring(response: 0.6), value: completedCount)
+                    .animation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.6), value: completedCount)
             }
         }
         .frame(height: 4)
@@ -229,7 +230,7 @@ struct DashboardView: View {
 
             if !searchText.isEmpty {
                 Button {
-                    withAnimation(.spring(response: 0.3)) { searchText = "" }
+                    withAnimation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.3)) { searchText = "" }
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(.secondary.opacity(0.6))
@@ -515,7 +516,7 @@ struct DashboardView: View {
     // MARK: - Helpers
 
     private func dismissSearch() {
-        withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
+        withAnimation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.38, dampingFraction: 0.82)) {
             isSearchFocused = false
             searchText = ""
         }

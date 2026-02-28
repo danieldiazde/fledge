@@ -53,6 +53,8 @@ struct PillarProgressRow: View {
     let done: Int
     let color: Color
 
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+
     private var fraction: CGFloat {
         total > 0 ? CGFloat(done) / CGFloat(total) : 0
     }
@@ -86,7 +88,7 @@ struct PillarProgressRow: View {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(color.opacity(0.8))
                         .frame(width: geo.size.width * fraction, height: 4)
-                        .animation(.spring(response: 0.6).delay(0.1), value: done)
+                        .animation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.6).delay(0.1), value: done)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -108,6 +110,7 @@ struct SkyView: View {
     @State private var showCompleted = false
     @ScaledMetric private var largeXPSize: CGFloat = 48
     @ScaledMetric private var moodIconSize: CGFloat = 44
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     private var allMissions: [Mission]  { MissionData.all }
     private var completedCount: Int     { allMissions.filter { $0.isComplete }.count }
@@ -170,7 +173,7 @@ struct SkyView: View {
         }
         .ignoresSafeArea()
         .onAppear {
-            withAnimation(.easeOut(duration: 0.8).delay(0.2)) { appeared = true }
+            withAnimation(reduceMotion ? .easeInOut(duration: 0.3) : .easeOut(duration: 0.8).delay(0.2)) { appeared = true }
         }
         .onChange(of: completedCount) { _, newValue in
             if newValue == totalCount && totalCount > 0 { triggerFledgeCelebration() }
@@ -214,14 +217,14 @@ struct SkyView: View {
         TimelineView(.animation) { timeline in
             Canvas { context, size in
                 let time            = timeline.date.timeIntervalSinceReferenceDate
-                let breathIntensity = (sin(time * SkyMetrics.Canvas.breathSpeed) + 1.0) / 2.0
+                let breathIntensity = reduceMotion ? 0.5 : (sin(time * SkyMetrics.Canvas.breathSpeed) + 1.0) / 2.0
                 let halfStar        = SkyMetrics.Canvas.starSize / 2
 
                 // Background star field
                 for i in 1...SkyMetrics.Canvas.backgroundStarCount {
                     let x       = CGFloat((i * 73) % 100) / 100.0 * size.width
                     let y       = CGFloat((i * 91) % 100) / 100.0 * size.height
-                    let twinkle = (sin(time * Double(i % 5) * SkyMetrics.Canvas.twinkleSpeed) + 1.0) / 2.0
+                    let twinkle = reduceMotion ? 0.5 : (sin(time * Double(i % 5) * SkyMetrics.Canvas.twinkleSpeed) + 1.0) / 2.0
                     context.fill(
                         Path(ellipseIn: CGRect(x: x - halfStar, y: y - halfStar,
                                                width: SkyMetrics.Canvas.starSize,
@@ -300,7 +303,7 @@ struct SkyView: View {
         .padding(.horizontal, SkyMetrics.Layout.panelHorizontal)
         .padding(.top, SkyMetrics.Layout.statusTopPadding)
         .opacity(appeared ? 1 : 0)
-        .offset(y: appeared ? 0 : -8)
+        .offset(y: appeared ? 0 : (reduceMotion ? 0 : -8))
         .animation(.easeOut(duration: 0.55).delay(0.1), value: appeared)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Week \(arrivalManager.currentWeek) of 4. \(statusLine)")
@@ -407,7 +410,7 @@ struct SkyView: View {
                                 : 0,
                             height: 5
                         )
-                        .animation(.spring(response: 0.6), value: completedCount)
+                        .animation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.6), value: completedCount)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -443,7 +446,7 @@ struct SkyView: View {
                 .foregroundColor(Color.white.opacity(0.4))
                 .padding(.bottom, 6)
         }
-        .animation(.spring(response: 0.4), value: userProfile.totalXP)
+        .animation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.4), value: userProfile.totalXP)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(userProfile.totalXP) XP earned.")
     }

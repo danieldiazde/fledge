@@ -22,6 +22,7 @@ struct WinCardView: View {
     @State private var particlesBurst = false
     @State private var displayedXP = 0
     @State private var glowPulse = false
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     let particleCount = 12
     func particleAngle(_ index: Int) -> Double { Double(index) * (360.0 / Double(particleCount)) }
@@ -51,13 +52,18 @@ struct WinCardView: View {
             .padding(.bottom, 16)
         }
         .onAppear {
-            withAnimation { checkmarkScale = 1.0 }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { particlesBurst = true }
+            withAnimation(reduceMotion ? .easeInOut(duration: 0.3) : .default) { checkmarkScale = 1.0 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                // Skip the particle explosion when Reduce Motion is on;
+                // particles stay at center (hidden under the glow circle).
+                if !reduceMotion { particlesBurst = true }
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                withAnimation(.spring(response: 0.85)) { displayedXP = xpValue }
+                withAnimation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.85)) { displayedXP = xpValue }
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
-                withAnimation { glowPulse = true }
+                // Skip the perpetual pulse — it causes constant vestibular stimulation.
+                if !reduceMotion { withAnimation { glowPulse = true } }
             }
         }
     }
@@ -98,7 +104,7 @@ struct WinCardView: View {
                 .foregroundColor(pillarColor)
                 .scaleEffect(checkmarkScale)
                 .animation(
-                    .spring(response: 0.50, dampingFraction: 0.55).delay(0.10),
+                    reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.50, dampingFraction: 0.55).delay(0.10),
                     value: checkmarkScale
                 )
         }
@@ -158,6 +164,7 @@ struct FledgeMomentView: View {
 
     @EnvironmentObject var moodManager: MoodManager
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     @State private var appeared = false
     @State private var starScale: CGFloat = 0.3
@@ -170,12 +177,13 @@ struct FledgeMomentView: View {
             momentContent
         }
         .onAppear {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.55).delay(0.05)) {
+            withAnimation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.5, dampingFraction: 0.55).delay(0.05)) {
                 starScale = 1.0
                 appeared = true
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                withAnimation { glowPulse = true }
+                // Skip the perpetual pulse — it causes constant vestibular stimulation.
+                if !reduceMotion { withAnimation { glowPulse = true } }
             }
         }
     }
@@ -208,7 +216,7 @@ struct FledgeMomentView: View {
                 for i in 1...30 {
                     let x  = CGFloat((i * 73  + 11) % 100) / 100.0 * size.width
                     let y  = CGFloat((i * 89  + 31) % 100) / 100.0 * size.height
-                    let tw = (sin(t * Double(i % 7 + 1) * 0.45 + Double(i) * 0.9) + 1.0) / 2.0
+                    let tw = reduceMotion ? 0.5 : (sin(t * Double(i % 7 + 1) * 0.45 + Double(i) * 0.9) + 1.0) / 2.0
                     let r: CGFloat = i % 5 == 0 ? 1.6 : (i % 3 == 0 ? 1.1 : 0.7)
                     let alpha = 0.08 + 0.20 * tw
                     ctx.fill(
@@ -241,7 +249,7 @@ struct FledgeMomentView: View {
                         width: appeared ? CGFloat(80 + i * 65) : 20,
                         height: appeared ? CGFloat(80 + i * 65) : 20
                     )
-                    .animation(.spring(response: 0.8, dampingFraction: 0.6).delay(Double(i) * 0.1), value: appeared)
+                    .animation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.8, dampingFraction: 0.6).delay(Double(i) * 0.1), value: appeared)
             }
 
             ForEach(0..<8, id: \.self) { i in
@@ -255,7 +263,7 @@ struct FledgeMomentView: View {
                     )
                     .opacity(appeared ? 1 : 0)
                     .animation(
-                        .spring(response: 0.55, dampingFraction: 0.52).delay(0.12), value: appeared
+                        reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.55, dampingFraction: 0.52).delay(0.12), value: appeared
                     )
             }
 
@@ -291,7 +299,7 @@ struct FledgeMomentView: View {
                 .padding(.horizontal, 32)
                 .padding(.top, 42)
                 .opacity(appeared ? 1 : 0)
-                .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.3), value: appeared)
+                .animation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.6, dampingFraction: 0.8).delay(0.3), value: appeared)
 
             Text(pillar.rawValue.uppercased())
                 .font(.system(.caption, design: .rounded)).fontWeight(.bold)

@@ -18,6 +18,7 @@ struct MissionStepsView: View {
     let onToggle: (UUID) -> Void
 
     @State private var appeared = false
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var completedCount: Int {
         progress?.completedCount(for: steps) ?? 0
@@ -34,7 +35,8 @@ struct MissionStepsView: View {
             stepRows
         }
         .onAppear {
-            withAnimation { appeared = true }
+            if reduceMotion { appeared = true }
+            else { withAnimation { appeared = true } }
         }
     }
 
@@ -60,7 +62,7 @@ struct MissionStepsView: View {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(pillarColor)
                         .frame(width: geo.size.width * progressFraction, height: 4)
-                        .animation(.spring(response: 0.4), value: progressFraction)
+                        .animation(reduceMotion ? .easeInOut(duration: 0.3) : .spring(response: 0.4), value: progressFraction)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -105,6 +107,7 @@ struct MissionStepRow: View {
 
     @State private var isExpanded = false
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -166,7 +169,7 @@ struct MissionStepRow: View {
                         .foregroundColor(.secondary)
                 }
             }
-            .animation(.spring(response: 0.3), value: isChecked)
+            .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.3), value: isChecked)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(isChecked
@@ -189,11 +192,11 @@ struct MissionStepRow: View {
                 .font(.system(.caption2)).fontWeight(.semibold)
                 .foregroundColor(.secondary.opacity(0.35))
                 .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                .animation(.spring(response: 0.3, dampingFraction: 0.75), value: isExpanded)
+                .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.3, dampingFraction: 0.75), value: isExpanded)
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            withAnimation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.35, dampingFraction: 0.8)) {
                 isExpanded.toggle()
             }
         }
@@ -254,6 +257,7 @@ struct MissionResourcesView: View {
     let resources: [MissionResource]
     let pillarColor: Color
     @State private var appeared = false
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -275,7 +279,8 @@ struct MissionResourcesView: View {
             }
         }
         .onAppear {
-            withAnimation { appeared = true }
+            if reduceMotion { appeared = true }
+            else { withAnimation { appeared = true } }
         }
     }
 
