@@ -26,6 +26,17 @@ struct SearchMissionRow: View {
         colorScheme == .dark ? mission.pillar.color : mission.pillar.lightModeColor
     }
 
+    private var rowAccessibilityLabel: String {
+        let weekDesc = isCurrentWeek ? "this week" : "week \(mission.weekNumber)"
+        if isLocked {
+            return "\(mission.pillar.rawValue) mission, \(weekDesc): \(mission.title). Locked."
+        } else if mission.isComplete {
+            return "\(mission.pillar.rawValue) mission, \(weekDesc): \(mission.title). Completed."
+        } else {
+            return "\(mission.pillar.rawValue) mission, \(weekDesc): \(mission.title). \(mission.duration)."
+        }
+    }
+
     var body: some View {
         HStack(spacing: 14) {
             ZStack {
@@ -100,6 +111,8 @@ struct SearchMissionRow: View {
                 )
         }
         .opacity(mission.isComplete ? 0.55 : (isLocked ? 0.5 : 1.0))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(rowAccessibilityLabel)
         .opacity(appeared ? 1 : 0)
         .onAppear {
             withAnimation(.spring(response: 0.45, dampingFraction: 0.80).delay(Double(index) * 0.04)) {
@@ -142,6 +155,8 @@ struct ActivePillarPill: View {
                         .strokeBorder(Color.primary.opacity(0.07), lineWidth: 1)
                 )
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Searching all missions. \(pillar.rawValue) pillar selected.")
     }
 }
 
@@ -154,12 +169,15 @@ struct SearchEmptyPrompt: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(.title))
                 .foregroundColor(.secondary.opacity(0.35))
+                .accessibilityHidden(true)
             Text("Type to search all missions")
                 .font(.system(.headline, design: .rounded))
                 .foregroundColor(.secondary.opacity(0.55))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 48)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Type to search all missions.")
     }
 }
 
@@ -183,5 +201,7 @@ struct SearchNoResults: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 48)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("No missions found for \"\(query)\".")
     }
 }

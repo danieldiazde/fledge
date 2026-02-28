@@ -49,6 +49,8 @@ struct MissionStepsView: View {
                     .font(.system(.subheadline, design: .rounded)).fontWeight(.semibold)
                     .foregroundColor(.secondary)
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Steps. \(completedCount) of \(steps.count) complete.")
 
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
@@ -63,6 +65,7 @@ struct MissionStepsView: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: 4)
+            .accessibilityHidden(true)
         }
     }
 
@@ -166,6 +169,12 @@ struct MissionStepRow: View {
             .animation(.spring(response: 0.3), value: isChecked)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(isChecked
+            ? "Step \(step.number): \(step.action). Completed."
+            : "Step \(step.number): \(step.action).")
+        .accessibilityHint(isChecked
+            ? "Double-tap to uncheck this step."
+            : "Double-tap to mark this step as complete.")
     }
 
     private var titleAndChevron: some View {
@@ -188,6 +197,11 @@ struct MissionStepRow: View {
                 isExpanded.toggle()
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(step.action)
+        .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+        .accessibilityHint("Double-tap to \(isExpanded ? "collapse" : "expand") step details.")
+        .accessibilityAddTraits(.isButton)
     }
 
     @ViewBuilder
@@ -211,6 +225,7 @@ struct MissionStepRow: View {
                         .font(.system(.caption2))
                         .foregroundColor(pillarColor)
                         .padding(.top, 1)
+                        .accessibilityHidden(true)
                     Text(tip)
                         .font(.system(.footnote, design: .rounded))
                         .foregroundColor(pillarColor.opacity(0.9))
@@ -223,6 +238,8 @@ struct MissionStepRow: View {
                     RoundedRectangle(cornerRadius: 10).fill(pillarColor.opacity(0.08))
                 )
                 .padding(.horizontal, 16)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Tip: \(tip)")
             }
         }
         .padding(.bottom, 14)
@@ -293,5 +310,7 @@ struct MissionResourcesView: View {
                         .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
                 )
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(resource.name). \(resource.detail).")
     }
 }

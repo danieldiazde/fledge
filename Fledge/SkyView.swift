@@ -64,6 +64,7 @@ struct PillarProgressRow: View {
                     Circle()
                         .fill(color)
                         .frame(width: 6, height: 6)
+                        .accessibilityHidden(true)
                     Text(pillar.rawValue)
                         .font(.system(.body, design: .rounded))
                         .fontWeight(.semibold)
@@ -90,7 +91,10 @@ struct PillarProgressRow: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: 4)
+            .accessibilityHidden(true)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(pillar.rawValue): \(done) out of \(total) missions completed.")
     }
 }
 
@@ -194,6 +198,7 @@ struct SkyView: View {
             ZStack {
                 skyGradient
                 constellationCanvas
+                    .accessibilityHidden(true)
                 VStack(spacing: 0) {
                     statusHeader
                     Spacer()
@@ -297,6 +302,8 @@ struct SkyView: View {
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? 0 : -8)
         .animation(.easeOut(duration: 0.55).delay(0.1), value: appeared)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Week \(arrivalManager.currentWeek) of 4. \(statusLine)")
     }
 
     private var pillarChips: some View {
@@ -311,6 +318,7 @@ struct SkyView: View {
                     Circle()
                         .fill(isDone ? color : color.opacity(0.55))
                         .frame(width: 5, height: 5)
+                        .accessibilityHidden(true)
                     Text(pillar.rawValue)
                         .font(.system(.caption2, design: .rounded))
                         .fontWeight(.semibold)
@@ -331,6 +339,8 @@ struct SkyView: View {
                         )
                 )
                 .animation(.easeInOut(duration: 0.4), value: isDone)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(pillar.rawValue): \(done) of \(total)\(isDone ? ", complete" : "")")
             }
         }
         .padding(.bottom, SkyMetrics.Layout.chipBottomPadding)
@@ -402,7 +412,10 @@ struct SkyView: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: 5)
+            .accessibilityHidden(true)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Overall progress: \(completedCount) of \(totalCount) missions complete.")
     }
 
     private var pillarBreakdown: some View {
@@ -431,6 +444,8 @@ struct SkyView: View {
                 .padding(.bottom, 6)
         }
         .animation(.spring(response: 0.4), value: userProfile.totalXP)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(userProfile.totalXP) XP earned.")
     }
 
     private var completedMissionsEntry: some View {
@@ -445,6 +460,7 @@ struct SkyView: View {
                     }
                 }
                 .frame(width: 36)
+                .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Completed missions")
@@ -475,6 +491,8 @@ struct SkyView: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Completed missions. \(completedCount) mission\(completedCount == 1 ? "" : "s") done.")
+        .accessibilityHint("Double-tap to view all completed missions.")
         .sheet(isPresented: $showCompleted) {
             CompletedMissionsView()
                 .environmentObject(userProfile)
@@ -540,6 +558,8 @@ struct SkyView: View {
                 }
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Current mood: \(moodManager.currentMood.rawValue). \(moodManager.currentMood.subtitle).")
+            .accessibilityHint("Double-tap to change your mood.")
             .animation(.easeInOut(duration: 0.4), value: moodManager.currentMood.rawValue)
         }
     }

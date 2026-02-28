@@ -170,6 +170,8 @@ struct DashboardView: View {
                         )
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Current mood: \(moodManager.currentMood.rawValue).")
+                .accessibilityHint("Tap to view mood-based resources.")
             }
 
             if !isSearchActive {
@@ -204,6 +206,8 @@ struct DashboardView: View {
         .frame(height: 4)
         .padding(.top, 2)
         .transition(.opacity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(completedCount) of \(totalCount) missions complete this week.")
     }
 
     // MARK: - Search bar
@@ -231,6 +235,7 @@ struct DashboardView: View {
                         .foregroundColor(.secondary.opacity(0.6))
                         .font(.system(.title3))
                 }
+                .accessibilityLabel("Clear search")
                 .transition(.scale.combined(with: .opacity))
             }
 
@@ -351,6 +356,8 @@ struct DashboardView: View {
                     .font(.system(.callout))
                     .foregroundStyle(.secondary.opacity(0.4))
             }
+            .accessibilityLabel("Simulate week")
+            .accessibilityHint("Opens a menu to preview a different week.")
         }
         .padding(.horizontal, DashboardLayout.sectionInset)
         .padding(.top, DashboardLayout.sectionTopPad)

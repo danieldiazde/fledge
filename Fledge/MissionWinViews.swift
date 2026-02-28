@@ -103,6 +103,7 @@ struct WinCardView: View {
                 )
         }
         .padding(.top, 10)
+        .accessibilityHidden(true)
     }
 
     private var xpBadge: some View {
@@ -117,6 +118,8 @@ struct WinCardView: View {
         .padding(.vertical, 8)
         .background(Capsule().fill(pillarColor.opacity(0.12)))
         .padding(.top, -4)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Plus \(xpValue) XP earned.")
     }
 
     private var winMessage: some View {
@@ -138,6 +141,7 @@ struct WinCardView: View {
                 .background(RoundedRectangle(cornerRadius: 14).fill(pillarColor))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("See your moment")   // strips "→" arrow character
         .padding(.top, 6)
     }
 }
@@ -215,6 +219,7 @@ struct FledgeMomentView: View {
             }
         }
         .ignoresSafeArea()
+        .accessibilityHidden(true)   // Canvas is opaque to VoiceOver; info carried by momentText
     }
 
     private var momentContent: some View {
@@ -273,6 +278,7 @@ struct FledgeMomentView: View {
                 .shadow(color: pillarColor.opacity(0.55), radius: 28)
         }
         .frame(height: 220)
+        .accessibilityHidden(true)   // rings, dots, glow, checkmark — all decorative
     }
 
     private var momentText: some View {
@@ -293,6 +299,7 @@ struct FledgeMomentView: View {
                 .tracking(2)
                 .opacity(appeared ? 1 : 0)
                 .animation(.easeOut(duration: 0.4).delay(0.5), value: appeared)
+                .accessibilityHidden(true)   // pillar name already in the moment title above
         }
     }
 
@@ -305,6 +312,7 @@ struct FledgeMomentView: View {
                 .padding(.vertical, 18)
                 .background(RoundedRectangle(cornerRadius: 16).fill(pillarColor))
         }
+        .accessibilityLabel("Continue")   // strips "→" arrow character
         .padding(.horizontal, 24)
         .padding(.bottom, 48)
         .opacity(appeared ? 1 : 0)

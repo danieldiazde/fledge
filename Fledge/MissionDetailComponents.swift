@@ -48,6 +48,8 @@ struct MissionHeroView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
         .padding(.top, 16)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(mission.pillar.rawValue) mission: \(mission.title). Duration: \(mission.duration).")
     }
 }
 
@@ -151,6 +153,7 @@ struct RevealMoveButton: View {
                 Image(systemName: "arrow.down.circle.fill")
                     .font(.system(.title))
                     .foregroundColor(pillarColor)
+                    .accessibilityHidden(true)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 18)
@@ -164,6 +167,7 @@ struct RevealMoveButton: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityHint("Double-tap to reveal the steps for this mission.")
     }
 }
 
@@ -196,6 +200,7 @@ struct MissionBottomBar: View {
                         .font(.system(.caption, design: .rounded)).fontWeight(.semibold)
                 }
                 .foregroundColor(pillarColor.opacity(0.7))
+                .accessibilityHidden(true)
 
                 Button(action: onComplete) {
                     HStack(spacing: 10) {
@@ -217,6 +222,8 @@ struct MissionBottomBar: View {
                 }
                 .disabled(!allStepsComplete)
                 .animation(.spring(response: 0.4), value: allStepsComplete)
+                .accessibilityLabel(allStepsComplete ? "Mission complete" : "Complete all steps to unlock this mission.")
+                .accessibilityHint(allStepsComplete ? "Double-tap to earn \(xpValue) XP and mark this mission as complete." : "")
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
@@ -246,6 +253,8 @@ struct CompletedBadge: View {
             RoundedRectangle(cornerRadius: 14)
                 .fill(pillarColor.opacity(0.10))
         )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Mission complete.")
     }
 }
 
@@ -345,5 +354,7 @@ struct MoodPill: View {
                     .overlay(Capsule().strokeBorder(mood.color.opacity(0.25), lineWidth: 1))
             )
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label): \(mood.rawValue).")
     }
 }

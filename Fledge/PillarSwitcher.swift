@@ -93,6 +93,9 @@ struct HeroPillarCard: View {
             .padding(18)
         }
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(pillar.rawValue). \(pillar.tagline). Currently selected.")
+        .accessibilityAddTraits(.isSelected)
     }
 }
 
@@ -137,5 +140,7 @@ struct AccessoryPillarCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(pillar.rawValue)
+        .accessibilityHint("Switch to \(pillar.rawValue) pillar.")
     }
 }

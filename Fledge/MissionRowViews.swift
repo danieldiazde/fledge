@@ -17,6 +17,16 @@ struct GlassMissionRow: View {
     let isLocked: Bool
     @State private var appeared = false
 
+    private var rowAccessibilityLabel: String {
+        if isLocked {
+            return "\(mission.title). Locked. Complete \"\(mission.prerequisiteTitle)\" to unlock."
+        } else if mission.isComplete {
+            return "\(mission.title). Completed. \(mission.duration)."
+        } else {
+            return "\(mission.title). \(mission.duration)."
+        }
+    }
+
     var body: some View {
         HStack(spacing: 14) {
             ZStack {
@@ -61,6 +71,8 @@ struct GlassMissionRow: View {
         .padding(16)
         .pillarGlassCard(mission.pillar, cornerRadius: 20, isComplete: mission.isComplete)
         .opacity(mission.isComplete ? 0.55 : (isLocked ? 0.5 : 1.0))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(rowAccessibilityLabel)
         .opacity(appeared ? 1 : 0)
         .onAppear {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(Double(index) * 0.05)) {
@@ -78,6 +90,10 @@ struct UpcomingMissionRow: View {
     let index: Int
     let pillarColor: Color
     @State private var appeared = false
+
+    private var rowAccessibilityLabel: String {
+        "Week \(mission.weekNumber) preview: \(mission.title). \(mission.duration). Not yet available."
+    }
 
     var body: some View {
         HStack(spacing: 14) {
@@ -121,6 +137,8 @@ struct UpcomingMissionRow: View {
                         .strokeBorder(Color.primary.opacity(0.05), lineWidth: 1)
                 )
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(rowAccessibilityLabel)
         .opacity(appeared ? 1 : 0)
         .onAppear {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(Double(index) * 0.05)) {
@@ -148,5 +166,7 @@ struct GlassEmptyStateView: View {
         .frame(maxWidth: .infinity)
         .padding(40)
         .glassCard(cornerRadius: 20)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("No \(pillar.rawValue) missions this week. More coming soon.")
     }
 }
